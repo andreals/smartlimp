@@ -174,27 +174,43 @@ export default function ClientesPage() {
     }
   };
 
-  const buscarCep = async (cepRaw: string) => {
-    const cep = unmask(cepRaw);
+  useEffect(() => {
+    if (!modalOpen) return;
+    const cep = unmask(form.cep);
     if (cep.length !== 8) return;
-    try {
-      const { data } = await api.get<{
-        logradouro: string;
-        bairro: string;
-        cidade: string;
-        uf: string;
-      }>(`/cep/${cep}`);
-      setForm((f) => ({
-        ...f,
-        logradouro: data.logradouro,
-        bairro: data.bairro,
-        cidade: data.cidade,
-        uf: data.uf,
-      }));
-    } catch (err) {
-      toast.error(extractError(err, 'CEP não encontrado'));
-    }
-  };
+
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      try {
+        const { data } = await api.get<{
+          logradouro: string;
+          bairro: string;
+          cidade: string;
+          uf: string;
+        }>(`/cep/${cep}`);
+        if (cancelled) return;
+        setForm((f) =>
+          unmask(f.cep) !== cep
+            ? f
+            : {
+                ...f,
+                logradouro: data.logradouro,
+                bairro: data.bairro,
+                cidade: data.cidade,
+                uf: data.uf,
+              },
+        );
+      } catch (err) {
+        if (cancelled) return;
+        toast.error(extractError(err, 'CEP não encontrado'));
+      }
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [modalOpen, form.cep]);
 
   const buscarParecidos = async (nome: string) => {
     if (nome.trim().length < 3) {
@@ -374,7 +390,6 @@ export default function ClientesPage() {
                   required
                   value={form.cep}
                   onChange={(e) => setForm({ ...form, cep: maskCEP(e.target.value) })}
-                  onBlur={(e) => buscarCep(e.target.value)}
                 />
               </div>
               <div>
