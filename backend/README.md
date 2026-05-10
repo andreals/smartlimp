@@ -38,7 +38,11 @@ migrations/      # scripts SQL versionados (Postgres)
 O backend está pronto para **Docker** na Railway.
 
 1. No [Railway](https://railway.app), cria um projeto e um serviço a partir deste repositório.
-2. Em **Settings → Root Directory**, define `backend` (monorepo com `frontend/` na raiz).
+2. **Root Directory** (escolhe uma):
+   - **Recomendado para monorepo:** deixa **vazio** (raiz do repo). A Railway usa o `Dockerfile` e o `railway.json` na **raiz** do projeto, que compilam só a pasta `backend/`.
+   - **Alternativa:** define `backend` — nesse caso usa-se o `Dockerfile` dentro de `backend/`.
+
+   Se deixares a raiz do repo mas a Railway ignorar o Docker e tentar Railpack, confirma que o serviço está ligado a este repositório e que não há outro `railway.json` a sobrepor; o ficheiro na raiz deve forçar builder **DOCKERFILE**.
 3. Em **Variables**, configura pelo menos:
    - `DATABASE_URL` — Postgres (ex.: Neon), formato `postgresql://...?sslmode=require`
    - `JWT_SECRET` — segredo forte (não uses o valor de exemplo)
@@ -56,7 +60,7 @@ DATABASE_URL='postgresql://...' JWT_SECRET='...' go run ./cmd/migrate
 
 5. No **frontend** (Vercel ou build local), define `VITE_API_URL` com o URL público do serviço Railway **sem** path `/api` (ex.: `https://teu-servico.up.railway.app`).
 
-Ficheiros relevantes: `Dockerfile`, `railway.json` (healthcheck em `/api/health`).
+Ficheiros relevantes: na **raiz** do repo (`Dockerfile`, `railway.json`) ou em `backend/` se usares Root Directory `backend` (healthcheck em `/api/health`).
 
 ## Setup
 ```bash
