@@ -94,3 +94,13 @@
     @apply rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3;
   }
 }
+
+@media print {
+  /* Duas vias lado a lado em retrato (evita empilhar como coluna única no preview de impressão). */
+  .comanda-impressao-vias {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    align-items: stretch;
+  }
+}

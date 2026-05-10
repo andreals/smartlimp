@@ -14,7 +14,7 @@ const tipoLabel: Record<string, string> = {
 
 function Via({ data, label }: { data: Impressao; label: string }) {
   return (
-    <div className="border border-slate-300 p-3 text-[11px]">
+    <div className="flex h-full min-h-0 min-w-0 flex-col border border-slate-300 p-3 text-[11px] print:break-inside-avoid">
       <header className="mb-2 flex items-center justify-between border-b border-dashed border-slate-300 pb-2">
         <div>
           <div className="text-base font-bold">Smart Limp</div>
@@ -136,12 +136,12 @@ export default function ImprimirComandaPage() {
   if (!data) return <div className="p-8"><Spinner /></div>;
 
   return (
-    <div className="bg-white p-2">
-      <div className="grid gap-2 md:grid-cols-3">
+    <div className="flex min-h-screen flex-col bg-white p-2 print:min-h-0">
+      <div className="comanda-impressao-vias grid min-h-0 w-full flex-1 grid-cols-2 auto-rows-fr gap-2 print:auto-rows-auto print:flex-none print:grid-cols-2 print:gap-3">
         <Via data={data} label="via Cliente" />
         <Via data={data} label="via Lavanderia" />
       </div>
-      <div className="mt-3 text-center text-[10px] text-rose-600">
+      <div className="mt-3 shrink-0 text-center text-[10px] text-rose-600 print:mt-2">
         Estou ciente que as roupas não retiradas em 90 dias serão colocadas à venda.
       </div>
     </div>

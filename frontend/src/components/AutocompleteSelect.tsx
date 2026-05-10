@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 
 export type AutocompleteOption = { value: string; label: string };
 
@@ -15,6 +24,8 @@ type Props = {
 function normalize(s: string) {
   return s.trim().toLowerCase();
 }
+
+type MenuRect = { top: number; left: number; width: number; maxHeight: number };
 
 export default function AutocompleteSelect({
   id: idProp,
@@ -41,6 +52,7 @@ export default function AutocompleteSelect({
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(selectedLabel);
   const [highlight, setHighlight] = useState(0);
+  const [menuRect, setMenuRect] = useState<MenuRect | null>(null);
 
   useEffect(() => {
     setText(selectedLabel);
@@ -57,6 +69,34 @@ export default function AutocompleteSelect({
   useEffect(() => {
     setHighlight(0);
   }, [filtered, open]);
+
+  const updateMenuRect = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const r = input.getBoundingClientRect();
+    const gap = 4;
+    const top = r.bottom + gap;
+    const viewportH = window.innerHeight;
+    const maxHeight = Math.max(120, Math.min(240, viewportH - top - 12));
+    setMenuRect({ top, left: r.left, width: r.width, maxHeight });
+  }, []);
+
+  const showList = open && !disabled && filtered.length > 0;
+
+  useLayoutEffect(() => {
+    if (!showList) {
+      setMenuRect(null);
+      return;
+    }
+    updateMenuRect();
+    const onReposition = () => updateMenuRect();
+    window.addEventListener('resize', onReposition);
+    document.addEventListener('scroll', onReposition, true);
+    return () => {
+      window.removeEventListener('resize', onReposition);
+      document.removeEventListener('scroll', onReposition, true);
+    };
+  }, [showList, updateMenuRect, text, filtered.length]);
 
   const commitText = useCallback(
     (raw: string) => {
@@ -115,7 +155,43 @@ export default function AutocompleteSelect({
     }
   };
 
-  const showList = open && !disabled && filtered.length > 0;
+  const listEl =
+    showList && menuRect && typeof document !== 'undefined'
+      ? createPortal(
+          <ul
+            id={listId}
+            role="listbox"
+            style={{
+              position: 'fixed',
+              top: menuRect.top,
+              left: menuRect.left,
+              width: menuRect.width,
+              maxHeight: menuRect.maxHeight,
+              zIndex: 100000,
+            }}
+            className="overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5"
+          >
+            {filtered.map((opt, i) => (
+              <li key={opt.value} role="presentation">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={opt.value === value}
+                  className={`flex w-full px-3.5 py-2.5 text-left text-sm ${
+                    i === highlight ? 'bg-brand-50 text-brand-900' : 'text-slate-800 hover:bg-slate-50'
+                  }`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() => setHighlight(i)}
+                  onClick={() => pick(opt)}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )
+      : null;
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -165,31 +241,7 @@ export default function AutocompleteSelect({
           </svg>
         </button>
       </div>
-      {showList && (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
-        >
-          {filtered.map((opt, i) => (
-            <li key={opt.value} role="presentation">
-              <button
-                type="button"
-                role="option"
-                aria-selected={opt.value === value}
-                className={`flex w-full px-3.5 py-2.5 text-left text-sm ${
-                  i === highlight ? 'bg-brand-50 text-brand-900' : 'text-slate-800 hover:bg-slate-50'
-                }`}
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() => setHighlight(i)}
-                onClick={() => pick(opt)}
-              >
-                {opt.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {listEl}
     </div>
   );
 }
