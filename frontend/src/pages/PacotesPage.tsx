@@ -6,7 +6,7 @@ import type { Pacote } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
-import TipoServicoRadios, { type TipoServico } from '@/components/TipoServicoRadios';
+import TipoServicoRadios, { type TipoServico, TipoServicoListBadge } from '@/components/TipoServicoRadios';
 
 const emptyForm = {
   id: undefined as number | undefined,
@@ -181,7 +181,9 @@ export default function PacotesPage() {
                 {pacotes.map((p) => (
                   <tr key={p.id}>
                     <td className="font-medium text-slate-800">{p.nome}</td>
-                    <td className="capitalize">{p.tipo}</td>
+                    <td className="align-middle">
+                      <TipoServicoListBadge tipo={p.tipo} />
+                    </td>
                     <td>{formatBRL(p.preco)}</td>
                     <td>{p.quantidade}</td>
                     <td>

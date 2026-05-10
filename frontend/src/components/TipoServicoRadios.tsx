@@ -64,6 +64,26 @@ const OPTIONS: {
   { value: 'tingir', label: 'Tingir', hint: 'Coloração', Icon: IconTingir },
 ];
 
+/** Ícone + nome do tipo (para colunas em tabelas). */
+export function TipoServicoListBadge({ tipo }: { tipo: string }) {
+  const opt = OPTIONS.find((o) => o.value === (tipo as TipoServico));
+  if (!opt) {
+    return <span className="text-sm capitalize text-slate-600">{tipo || '—'}</span>;
+  }
+  const Icon = opt.Icon;
+  return (
+    <div className="inline-flex max-w-full items-center gap-2.5">
+      <span
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"
+        aria-hidden
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 text-sm font-medium text-slate-800">{opt.label}</span>
+    </div>
+  );
+}
+
 interface Props {
   name: string;
   value: TipoServico | '';

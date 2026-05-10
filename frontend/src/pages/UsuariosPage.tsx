@@ -174,7 +174,7 @@ export default function UsuariosPage() {
   return (
     <>
       <PageHeader
-        title="Usu?rios"
+        title="Usuários"
         subtitle="Operadores do sistema"
         actions={
           <button className="btn-primary" onClick={novo}>

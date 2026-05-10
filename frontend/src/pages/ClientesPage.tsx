@@ -40,6 +40,29 @@ const iconInativo = (
   </svg>
 );
 
+const clienteTipoOptions = [
+  { value: 'avulso' as const, label: 'Avulso', icon: iconAvulso },
+  { value: 'fixo' as const, label: 'Fixo', icon: iconFixo },
+];
+
+function ClienteTipoListBadge({ tipo }: { tipo: string }) {
+  const opt = clienteTipoOptions.find((o) => o.value === tipo);
+  if (!opt) {
+    return <span className="text-sm capitalize text-slate-600">{tipo || '—'}</span>;
+  }
+  return (
+    <div className="inline-flex max-w-full items-center gap-2.5">
+      <span
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200/80"
+        aria-hidden
+      >
+        <span className="[&>svg]:h-4 [&>svg]:w-4">{opt.icon}</span>
+      </span>
+      <span className="min-w-0 text-sm font-medium text-slate-800">{opt.label}</span>
+    </div>
+  );
+}
+
 const emptyForm = {
   id: undefined as number | undefined,
   nome: '',
@@ -303,10 +326,7 @@ export default function ClientesPage() {
                   name="cliente-tipo"
                   value={form.tipo}
                   onChange={(tipo) => setForm({ ...form, tipo })}
-                  options={[
-                    { value: 'avulso', label: 'Avulso', icon: iconAvulso },
-                    { value: 'fixo', label: 'Fixo', icon: iconFixo },
-                  ]}
+                  options={clienteTipoOptions}
                 />
               </div>
               <div>
@@ -480,7 +500,9 @@ export default function ClientesPage() {
                     <td className="font-medium text-slate-800">{c.nome}</td>
                     <td>{c.celular || c.telefone || '-'}</td>
                     <td>{c.pacote || '-'}</td>
-                    <td className="capitalize">{c.tipo}</td>
+                    <td className="align-middle">
+                      <ClienteTipoListBadge tipo={c.tipo} />
+                    </td>
                     <td>
                       {c.status === 'ativo' ? (
                         <span className="pill-success">Ativo</span>
