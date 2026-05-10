@@ -18,7 +18,7 @@ function Via({ data, label }: { data: Impressao; label: string }) {
       <header className="mb-2 flex items-center justify-between border-b border-dashed border-slate-300 pb-2">
         <div>
           <div className="text-base font-bold">Smart Limp</div>
-          <div>Rua Marcos Luiz Sposaro, 98 - Nova Petrópolis - São Bernardo do Campo - SP</div>
+          <div>Rua Marcos Luiz Sposaro, 98 • Nova Petrópolis • São Bernardo do Campo • SP</div>
           <div>Cel: (11) 9 4230-7072 / (11) 9 4230-7072</div>
         </div>
         <div className="text-right">

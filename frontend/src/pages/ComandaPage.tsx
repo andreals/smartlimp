@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
-import { formatBRL, maskBRLInput, parseBRL, todayBR, isValidBRDate } from '@/lib/format';
+import {
+  formatBRL,
+  formatClienteAutocompleteMeta,
+  maskBRLInput,
+  parseBRL,
+  todayBR,
+  isValidBRDate,
+} from '@/lib/format';
 import type { Cliente, ItemComanda, Peca } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
@@ -117,13 +124,22 @@ export default function ComandaPage() {
     setIdPeca('');
   };
 
+  const setItemQuantidade = (itemId: string, q: number) => {
+    setItens((prev) =>
+      prev.map((row) =>
+        row.id === itemId ? { ...row, quantidade_peca: Math.max(1, q) } : row,
+      ),
+    );
+  };
+
   const removerItem = (id: string) => setItens((it) => it.filter((i) => i.id !== id));
 
   const clienteOptions = useMemo(
     () =>
       clientes.map((c) => ({
         value: String(c.id),
-        label: `${c.nome}${c.celular ? ` (${c.celular})` : ''}${c.bairro ? ` — ${c.bairro}` : ''}`,
+        label: c.nome,
+        meta: formatClienteAutocompleteMeta(c),
       })),
     [clientes],
   );
@@ -262,7 +278,7 @@ export default function ComandaPage() {
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Qtd</th>
+                  <th className="w-24">Qtd</th>
                   <th>Descrição</th>
                   <th>Serviço</th>
                   <th>Valor</th>
@@ -273,11 +289,25 @@ export default function ComandaPage() {
               <tbody className="divide-y divide-slate-100">
                 {itens.map((i) => (
                   <tr key={i.id}>
-                    <td>{i.quantidade_peca}</td>
-                    <td className="font-medium">{i.descricao}</td>
+                    <td className="align-middle">
+                      <input
+                        type="number"
+                        min={1}
+                        className="input w-full min-w-[4.5rem] py-1.5 text-sm"
+                        value={i.quantidade_peca}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          if (!Number.isFinite(v)) return;
+                          setItemQuantidade(i.id, v);
+                        }}
+                      />
+                    </td>
+                    <td className="font-medium text-slate-800">{i.descricao}</td>
                     <td>{tipoLabel[i.tipo]}</td>
-                    <td>{formatBRL(i.valor_peca)}</td>
-                    <td>{formatBRL(i.valor_peca * i.quantidade_peca)}</td>
+                    <td className="tabular-nums">{formatBRL(i.valor_peca)}</td>
+                    <td className="tabular-nums text-slate-800">
+                      {formatBRL(i.valor_peca * i.quantidade_peca)}
+                    </td>
                     <td className="text-right">
                       <button
                         type="button"

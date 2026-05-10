@@ -35,6 +35,19 @@ export function maskPhone(value: string): string {
   return v.replace(/(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3').replace(/-$/, '');
 }
 
+/** Segunda linha do autocomplete de cliente: telefone mascarado + bairro. */
+export function formatClienteAutocompleteMeta(c: {
+  celular: string;
+  telefone: string;
+  bairro: string;
+}): string | undefined {
+  const raw = (c.celular || c.telefone || '').trim();
+  const tel = raw ? maskPhone(raw) : '';
+  const bairro = (c.bairro || '').trim();
+  const parts = [tel, bairro].filter(Boolean);
+  return parts.length ? parts.join(' · ') : undefined;
+}
+
 export function maskCEP(value: string): string {
   const v = value.replace(/\D/g, '').slice(0, 8);
   return v.replace(/(\d{5})(\d{0,3})/, '$1-$2').replace(/-$/, '');

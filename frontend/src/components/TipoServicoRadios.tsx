@@ -95,13 +95,13 @@ export default function TipoServicoRadios({ name, value, onChange, legend = 'Tip
   return (
     <fieldset className="m-0 min-w-0 border-0 p-0">
       <legend className="mb-1.5 text-sm font-medium text-slate-600">{legend}</legend>
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
         {OPTIONS.map(({ value: v, label, hint, Icon }) => {
           const checked = value === v;
           return (
             <label
               key={v}
-              className={`relative flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 text-center transition ${
+              className={`relative flex cursor-pointer flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-center transition ${
                 checked
                   ? 'border-brand-500 bg-gradient-to-b from-brand-50/90 to-white shadow-sm shadow-brand-500/10 ring-1 ring-brand-500/25'
                   : 'border-slate-200/90 bg-white/80 hover:border-slate-300 hover:bg-slate-50/80'
@@ -116,17 +116,17 @@ export default function TipoServicoRadios({ name, value, onChange, legend = 'Tip
                 className="sr-only"
               />
               <div
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                className={`flex h-7 w-7 items-center justify-center rounded-md ${
                   checked ? 'bg-brand-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600'
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0 px-0.5">
-                <div className={`text-xs font-semibold leading-tight ${checked ? 'text-brand-900' : 'text-slate-800'}`}>
+                <div className={`text-[11px] font-semibold leading-tight ${checked ? 'text-brand-900' : 'text-slate-800'}`}>
                   {label}
                 </div>
-                <div className="mt-0.5 text-[10px] leading-snug text-slate-500">{hint}</div>
+                <div className="mt-px text-[9px] leading-snug text-slate-500">{hint}</div>
               </div>
             </label>
           );

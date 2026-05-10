@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
-import { formatBRL, isValidBRDate, maskBRLInput, parseBRL } from '@/lib/format';
+import {
+  formatBRL,
+  formatClienteAutocompleteMeta,
+  isValidBRDate,
+  maskBRLInput,
+  parseBRL,
+} from '@/lib/format';
 import type { Cliente, ComandaResumo } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
@@ -103,7 +109,12 @@ export default function FinanceiroPage() {
   const totalValor = comandas.reduce((acc, c) => acc + Number(c.valor || 0), 0);
 
   const clienteOptions = useMemo(
-    () => clientes.map((c) => ({ value: String(c.id), label: c.nome })),
+    () =>
+      clientes.map((c) => ({
+        value: String(c.id),
+        label: c.nome,
+        meta: formatClienteAutocompleteMeta(c),
+      })),
     [clientes],
   );
 

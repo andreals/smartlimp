@@ -9,7 +9,17 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-export type AutocompleteOption = { value: string; label: string };
+export type AutocompleteOption = {
+  value: string;
+  /** Linha principal (ex.: nome); também usada no campo após selecionar. */
+  label: string;
+  /** Linha secundária opcional (ex.: telefone + bairro), incluída na busca. */
+  meta?: string;
+};
+
+function optionSearchText(o: AutocompleteOption): string {
+  return normalize(`${o.label} ${o.meta ?? ''}`);
+}
 
 type Props = {
   id?: string;
@@ -63,7 +73,7 @@ export default function AutocompleteSelect({
     if (!q) return options;
     const sel = options.find((o) => o.value === value);
     if (sel && text === sel.label) return options;
-    return options.filter((o) => normalize(o.label).includes(q));
+    return options.filter((o) => optionSearchText(o).includes(q));
   }, [options, text, value]);
 
   useEffect(() => {
@@ -112,7 +122,7 @@ export default function AutocompleteSelect({
         setText(exact.label);
         return;
       }
-      const matches = options.filter((o) => normalize(o.label).includes(normalize(trimmed)));
+      const matches = options.filter((o) => optionSearchText(o).includes(normalize(trimmed)));
       if (matches.length === 1) {
         onChange(matches[0].value);
         setText(matches[0].label);
@@ -184,7 +194,12 @@ export default function AutocompleteSelect({
                   onMouseEnter={() => setHighlight(i)}
                   onClick={() => pick(opt)}
                 >
-                  {opt.label}
+                  <span className="flex flex-col gap-0.5 text-left">
+                    <span>{opt.label}</span>
+                    {opt.meta ? (
+                      <span className="text-xs font-normal leading-snug text-slate-500">{opt.meta}</span>
+                    ) : null}
+                  </span>
                 </button>
               </li>
             ))}
