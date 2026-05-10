@@ -13,6 +13,20 @@ export function parseBRL(value: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Máscara monetária pt-BR para digitação em tempo real.
+ * Ex.: "1234" -> "12,34"
+ */
+export function maskBRLInput(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  const amount = Number(digits) / 100;
+  return amount.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function maskPhone(value: string): string {
   const v = value.replace(/\D/g, '').slice(0, 11);
   if (v.length <= 10) {
@@ -40,6 +54,28 @@ export function isValidBRDate(s: string): boolean {
   const [d, m, y] = s.split('/').map(Number);
   const dt = new Date(y, m - 1, d);
   return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
+/** Máscara dd/mm/aaaa enquanto o usuário digita ou cola números. */
+export function maskDateBR(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+export function brDateToIso(s: string): string {
+  if (!isValidBRDate(s)) return '';
+  const [d, m, y] = s.split('/').map(Number);
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+export function isoToBrDate(iso: string): string {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return '';
+  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
 }
 
 export async function md5(text: string): Promise<string> {

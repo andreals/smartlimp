@@ -24,17 +24,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-gradient-to-br from-brand-100 via-white to-brand-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-brand-500 text-2xl font-bold text-white shadow-lg shadow-brand-500/30">
+    <div className="relative grid min-h-screen place-items-center overflow-hidden px-4 py-10">
+      <div
+        className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-brand-300/40 blur-3xl"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-slate-300/35 blur-3xl"
+        aria-hidden
+      />
+      <div className="relative w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-2xl font-bold text-white shadow-lg shadow-brand-600/35 ring-4 ring-white/50">
             SL
           </div>
-          <h1 className="text-2xl font-semibold text-slate-800">Smart Limp Lavanderia</h1>
-          <p className="text-sm text-slate-500">Faça login para continuar</p>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Smart Limp</h1>
+            <p className="text-sm font-medium text-slate-500">Lavanderia — acesso ao sistema</p>
+          </div>
         </div>
 
-        <form onSubmit={onSubmit} className="card space-y-4">
+        <form onSubmit={onSubmit} className="card space-y-5 shadow-card">
           <div>
             <label htmlFor="login">Login</label>
             <input
@@ -65,7 +75,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-8 text-center text-xs font-medium text-slate-400">
           Smart Limp © {new Date().getFullYear()}
         </p>
       </div>

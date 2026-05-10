@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
-import { formatBRL, parseBRL } from '@/lib/format';
+import { formatBRL, isValidBRDate, maskBRLInput, parseBRL } from '@/lib/format';
 import type { Cliente, ComandaResumo } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
+import DateField from '@/components/DateField';
 
 export default function FinanceiroPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -36,6 +37,10 @@ export default function FinanceiroPage() {
   const filtrar = async () => {
     if (!idCliente || !dataInicio || !dataFim) {
       toast.error('Selecione cliente e datas');
+      return;
+    }
+    if (!isValidBRDate(dataInicio) || !isValidBRDate(dataFim)) {
+      toast.error('Informe datas válidas (dd/mm/aaaa)');
       return;
     }
     setLoadingComandas(true);
@@ -111,24 +116,8 @@ export default function FinanceiroPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label>Data inicial</label>
-            <input
-              className="input mt-1"
-              placeholder="dd/mm/aaaa"
-              value={dataInicio}
-              onChange={(e) => setDataInicio(e.target.value)}
-            />
-          </div>
-          <div>
-            <label>Data final</label>
-            <input
-              className="input mt-1"
-              placeholder="dd/mm/aaaa"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-            />
-          </div>
+          <DateField id="financeiro-data-inicio" label="Data inicial" value={dataInicio} onChange={setDataInicio} />
+          <DateField id="financeiro-data-fim" label="Data final" value={dataFim} onChange={setDataFim} />
         </div>
         <div className="mt-3 flex justify-end">
           <button className="btn-primary" onClick={filtrar}>Filtrar</button>
@@ -301,7 +290,7 @@ export default function FinanceiroPage() {
               <input
                 className="input mt-1"
                 value={pagto.valorPago}
-                onChange={(e) => setPagto({ ...pagto, valorPago: e.target.value })}
+                onChange={(e) => setPagto({ ...pagto, valorPago: maskBRLInput(e.target.value) })}
               />
               <p className="mt-1 text-xs text-slate-500">
                 Diferença será registrada como saldo do cliente.

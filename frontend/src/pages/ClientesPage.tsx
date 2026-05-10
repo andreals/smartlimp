@@ -6,6 +6,38 @@ import type { Cliente, Pacote } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
+import ChoiceChips from '@/components/ChoiceChips';
+
+const iconAvulso = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
+    <path d="M5 4h14v16H5z" /><path d="M8 9h8M8 13h8M8 17h5" strokeLinecap="round" />
+  </svg>
+);
+const iconFixo = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
+    <rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4M16 3v4M4 10h16" strokeLinecap="round" />
+  </svg>
+);
+const iconYes = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+    <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const iconNo = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+    <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" />
+  </svg>
+);
+const iconAtivo = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+    <circle cx="12" cy="12" r="8" /><path d="m8.5 12 2.5 2.5L16 9.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const iconInativo = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+    <circle cx="12" cy="12" r="8" /><path d="M8.5 8.5l7 7m0-7-7 7" strokeLinecap="round" />
+  </svg>
+);
 
 const emptyForm = {
   id: undefined as number | undefined,
@@ -254,34 +286,28 @@ export default function ClientesPage() {
             <h2 className="mb-4 text-base">Pagamento</h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label>Tipo</label>
-                <div className="mt-2 flex gap-3">
-                  {(['avulso', 'fixo'] as const).map((t) => (
-                    <label key={t} className="inline-flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        checked={form.tipo === t}
-                        onChange={() => setForm({ ...form, tipo: t })}
-                      />
-                      {t === 'avulso' ? 'Avulso' : 'Fixo'}
-                    </label>
-                  ))}
-                </div>
+                <ChoiceChips
+                  legend="Tipo"
+                  name="cliente-tipo"
+                  value={form.tipo}
+                  onChange={(tipo) => setForm({ ...form, tipo })}
+                  options={[
+                    { value: 'avulso', label: 'Avulso', icon: iconAvulso },
+                    { value: 'fixo', label: 'Fixo', icon: iconFixo },
+                  ]}
+                />
               </div>
               <div>
-                <label>Antecipado</label>
-                <div className="mt-2 flex gap-3">
-                  {(['S', 'N'] as const).map((t) => (
-                    <label key={t} className="inline-flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        checked={form.antecipado === t}
-                        onChange={() => setForm({ ...form, antecipado: t })}
-                      />
-                      {t === 'S' ? 'Sim' : 'Não'}
-                    </label>
-                  ))}
-                </div>
+                <ChoiceChips
+                  legend="Antecipado"
+                  name="cliente-antecipado"
+                  value={form.antecipado}
+                  onChange={(antecipado) => setForm({ ...form, antecipado })}
+                  options={[
+                    { value: 'S', label: 'Sim', icon: iconYes },
+                    { value: 'N', label: 'Não', icon: iconNo },
+                  ]}
+                />
               </div>
               <div>
                 <label>Frequência</label>
@@ -373,19 +399,16 @@ export default function ClientesPage() {
           </section>
 
           <section className="card">
-            <label>Status</label>
-            <div className="mt-2 flex gap-3">
-              {(['ativo', 'inativo'] as const).map((s) => (
-                <label key={s} className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    checked={form.status === s}
-                    onChange={() => setForm({ ...form, status: s })}
-                  />
-                  {s === 'ativo' ? 'Ativo' : 'Inativo'}
-                </label>
-              ))}
-            </div>
+            <ChoiceChips
+              legend="Status"
+              name="cliente-status"
+              value={form.status}
+              onChange={(status) => setForm({ ...form, status })}
+              options={[
+                { value: 'ativo', label: 'Ativo', icon: iconAtivo },
+                { value: 'inativo', label: 'Inativo', icon: iconInativo },
+              ]}
+            />
           </section>
 
           <div className="flex justify-end gap-2">

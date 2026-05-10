@@ -1,11 +1,24 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
-import { formatBRL, parseBRL } from '@/lib/format';
+import { formatBRL, maskBRLInput, parseBRL } from '@/lib/format';
 import type { Peca } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
+import ChoiceChips from '@/components/ChoiceChips';
+
+const iconYes = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+    <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const iconNo = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+    <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" />
+  </svg>
+);
 
 const emptyForm = {
   id: undefined as number | undefined,
@@ -123,26 +136,23 @@ export default function PecasPage() {
                   className="input mt-1"
                   required
                   value={form[key]}
-                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  onChange={(e) => setForm({ ...form, [key]: maskBRLInput(e.target.value) })}
                   placeholder="0,00"
                 />
               </div>
             ))}
           </div>
           <div>
-            <label>Entra no pacote?</label>
-            <div className="mt-2 flex gap-3">
-              {(['S', 'N'] as const).map((v) => (
-                <label key={v} className="inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    checked={form.entra_pacote === v}
-                    onChange={() => setForm({ ...form, entra_pacote: v })}
-                  />
-                  {v === 'S' ? 'Sim' : 'Não'}
-                </label>
-              ))}
-            </div>
+            <ChoiceChips
+              legend="Entra no pacote?"
+              name="peca-entra-pacote"
+              value={form.entra_pacote}
+              onChange={(v) => setForm({ ...form, entra_pacote: v })}
+              options={[
+                { value: 'S', label: 'Sim', icon: iconYes },
+                { value: 'N', label: 'Não', icon: iconNo },
+              ]}
+            />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" className="btn-secondary" onClick={() => setView('list')}>

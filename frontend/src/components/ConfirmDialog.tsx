@@ -24,16 +24,22 @@ export default function ConfirmDialog({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
       onClick={onCancel}
+      role="presentation"
     >
       <div
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
       >
-        <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-        {description && <div className="mt-2 text-sm text-slate-600">{description}</div>}
-        <div className="mt-6 flex justify-end gap-2">
+        <h2 id="confirm-dialog-title" className="text-lg font-bold text-slate-900">
+          {title}
+        </h2>
+        {description && <div className="mt-3 text-sm leading-relaxed text-slate-600">{description}</div>}
+        <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button type="button" className="btn-secondary" onClick={onCancel}>
             {cancelLabel}
           </button>

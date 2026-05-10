@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
-import { formatBRL, parseBRL, todayBR, isValidBRDate } from '@/lib/format';
+import { formatBRL, maskBRLInput, parseBRL, todayBR, isValidBRDate } from '@/lib/format';
 import type { Cliente, ItemComanda, Peca } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
+import EmptyState from '@/components/EmptyState';
+import DateField from '@/components/DateField';
+import TipoServicoRadios, { type TipoServico } from '@/components/TipoServicoRadios';
 
 const STORAGE_KEY = 'smartlimp:comanda';
 
@@ -24,7 +27,7 @@ export default function ComandaPage() {
   const [dataComanda, setDataComanda] = useState(todayBR());
   const [idPeca, setIdPeca] = useState('');
   const [quantidade, setQuantidade] = useState('');
-  const [tipo, setTipo] = useState<'' | 'lavar' | 'passar' | 'lavarpassar' | 'tingir'>('');
+  const [tipo, setTipo] = useState<TipoServico | ''>('');
   const [desconto, setDesconto] = useState('0,00');
   const [acrescimo, setAcrescimo] = useState('0,00');
   const [pagamento, setPagamento] = useState(false);
@@ -172,7 +175,7 @@ export default function ComandaPage() {
   if (loading) {
     return (
       <div className="card">
-        <Spinner label="Carregando dados da comanda..." />
+        <Spinner label="Carregando dados da comanda…" />
       </div>
     );
   }
@@ -181,7 +184,8 @@ export default function ComandaPage() {
     <>
       <PageHeader title="Comanda" subtitle="Crie uma nova comanda para o cliente" />
 
-      <section className="card mb-4">
+      <section className="card mb-6">
+        <h2 className="card-title">Dados da comanda</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label>Cliente*</label>
@@ -194,15 +198,7 @@ export default function ComandaPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label>Data*</label>
-            <input
-              className="input mt-1"
-              placeholder="dd/mm/aaaa"
-              value={dataComanda}
-              onChange={(e) => setDataComanda(e.target.value)}
-            />
-          </div>
+          <DateField id="comanda-data" label="Data*" value={dataComanda} onChange={setDataComanda} required />
           <div>
             <label>Peça</label>
             <select className="input mt-1" value={idPeca} onChange={(e) => setIdPeca(e.target.value)}>
@@ -225,39 +221,30 @@ export default function ComandaPage() {
             />
           </div>
           <div className="md:col-span-2">
-            <label>Tipo</label>
-            <select
-              className="input mt-1"
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value as typeof tipo)}
-            >
-              <option value="">Selecione um tipo</option>
-              <option value="lavar">Lavar</option>
-              <option value="passar">Passar</option>
-              <option value="lavarpassar">Lavar e Passar</option>
-              <option value="tingir">Tingir</option>
-            </select>
+            <TipoServicoRadios name="comanda-tipo-servico" value={tipo} onChange={setTipo} legend="Tipo*" />
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button className="btn-primary" onClick={adicionarItem}>
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
+          <button type="button" className="btn-primary" onClick={adicionarItem}>
             Adicionar peça
           </button>
           {idCliente && (
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-slate-600">
               {tipoCliente && <span className="capitalize">Cliente {tipoCliente} • </span>}
-              Pontos disponíveis: <strong>{pontosDisponiveis}</strong> • Saldo:{' '}
-              <strong>{formatBRL(saldoCliente)}</strong>
+              Pontos: <strong className="font-semibold text-slate-800">{pontosDisponiveis}</strong> • Saldo:{' '}
+              <strong className="font-semibold text-slate-800">{formatBRL(saldoCliente)}</strong>
             </span>
           )}
         </div>
       </section>
 
-      <section className="card mb-4">
+      <section className="card mb-6">
+        <h2 className="card-title">Itens</h2>
         {itens.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-400">
-            Nenhuma peça adicionada
-          </p>
+          <EmptyState
+            title="Nenhuma peça na comanda"
+            description="Selecione cliente, peça, quantidade e tipo de serviço, depois clique em Adicionar peça."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="table-base">
@@ -279,8 +266,12 @@ export default function ComandaPage() {
                     <td>{tipoLabel[i.tipo]}</td>
                     <td>{formatBRL(i.valor_peca)}</td>
                     <td>{formatBRL(i.valor_peca * i.quantidade_peca)}</td>
-                    <td>
-                      <button className="btn-danger text-xs" onClick={() => removerItem(i.id)}>
+                    <td className="text-right">
+                      <button
+                        type="button"
+                        className="btn-danger !rounded-lg !px-3 !py-1 !text-xs"
+                        onClick={() => removerItem(i.id)}
+                      >
                         Remover
                       </button>
                     </td>
@@ -292,14 +283,15 @@ export default function ComandaPage() {
         )}
       </section>
 
-      <section className="card mb-4">
+      <section className="card mb-6">
+        <h2 className="card-title">Desconto e acréscimo</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="text-emerald-700">Desconto</label>
             <input
               className="input mt-1"
               value={desconto}
-              onChange={(e) => setDesconto(e.target.value)}
+              onChange={(e) => setDesconto(maskBRLInput(e.target.value))}
             />
           </div>
           <div>
@@ -307,41 +299,43 @@ export default function ComandaPage() {
             <input
               className="input mt-1"
               value={acrescimo}
-              onChange={(e) => setAcrescimo(e.target.value)}
+              onChange={(e) => setAcrescimo(maskBRLInput(e.target.value))}
             />
           </div>
         </div>
       </section>
 
-      <section className="card mb-4">
-        <div className="grid gap-3 md:grid-cols-4">
-          <div>
-            <p className="text-xs uppercase text-slate-500">Pontos a acumular</p>
-            <p className="text-lg font-semibold">{totals.pontosAcumulados}</p>
+      <section className="card mb-6">
+        <h2 className="card-title">Resumo</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="stat-tile">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pontos a acumular</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{totals.pontosAcumulados}</p>
           </div>
-          <div>
-            <p className="text-xs uppercase text-slate-500">Saldo cliente</p>
-            <p className="text-lg font-semibold">{formatBRL(saldoCliente)}</p>
+          <div className="stat-tile">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Saldo cliente</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{formatBRL(saldoCliente)}</p>
           </div>
-          <div>
-            <p className="text-xs uppercase text-slate-500">Total de peças</p>
-            <p className="text-lg font-semibold">{totals.totalPecas}</p>
+          <div className="stat-tile">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total de peças</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{totals.totalPecas}</p>
           </div>
-          <div>
-            <p className="text-xs uppercase text-slate-500">Valor total</p>
-            <p className="text-2xl font-bold text-brand-600">{formatBRL(totals.total)}</p>
+          <div className="stat-tile border-brand-200/60 bg-gradient-to-br from-brand-50/80 to-white">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-800/80">Valor total</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-brand-700">{formatBRL(totals.total)}</p>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-          <label className="inline-flex items-center gap-2 text-sm font-medium">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-6">
+          <label className="inline-flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
             <input
               type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30"
               checked={pagamento}
               onChange={(e) => setPagamento(e.target.checked)}
             />
             Comanda de pagamento?
           </label>
-          <button className="btn-primary" disabled={submitting} onClick={finalizar}>
+          <button type="button" className="btn-primary min-w-[10rem]" disabled={submitting} onClick={finalizar}>
             {submitting ? 'Finalizando...' : 'Finalizar Comanda'}
           </button>
         </div>

@@ -1,16 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
-import { formatBRL, parseBRL } from '@/lib/format';
+import { formatBRL, maskBRLInput, parseBRL } from '@/lib/format';
 import type { Pacote } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
+import TipoServicoRadios, { type TipoServico } from '@/components/TipoServicoRadios';
 
 const emptyForm = {
   id: undefined as number | undefined,
   nome: '',
-  tipo: 'lavar',
+  tipo: 'lavar' as TipoServico,
   preco: '',
   quantidade: '',
 };
@@ -49,7 +50,7 @@ export default function PacotesPage() {
       setForm({
         id: data.id,
         nome: data.nome,
-        tipo: data.tipo,
+        tipo: data.tipo as TipoServico,
         preco: data.preco.toFixed(2).replace('.', ','),
         quantidade: String(data.quantidade),
       });
@@ -102,17 +103,12 @@ export default function PacotesPage() {
             />
           </div>
           <div>
-            <label>Tipo</label>
-            <select
-              className="input mt-1"
+            <TipoServicoRadios
+              name="pacote-tipo-servico"
+              legend="Tipo"
               value={form.tipo}
-              onChange={(e) => setForm({ ...form, tipo: e.target.value })}
-            >
-              <option value="lavar">Lavar</option>
-              <option value="passar">Passar</option>
-              <option value="lavarpassar">Lavar e Passar</option>
-              <option value="tingir">Tingir</option>
-            </select>
+              onChange={(v) => v && setForm({ ...form, tipo: v })}
+            />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -121,7 +117,7 @@ export default function PacotesPage() {
                 className="input mt-1"
                 required
                 value={form.preco}
-                onChange={(e) => setForm({ ...form, preco: e.target.value })}
+                onChange={(e) => setForm({ ...form, preco: maskBRLInput(e.target.value) })}
                 placeholder="0,00"
               />
             </div>

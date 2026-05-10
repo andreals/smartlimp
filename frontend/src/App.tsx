@@ -24,7 +24,10 @@ export default function App() {
         position="top-right"
         toastOptions={{
           duration: 4000,
-          style: { fontSize: '14px', borderRadius: '12px' },
+          className: '!bg-white !text-slate-800 !shadow-card !border !border-slate-200/80',
+          style: { fontSize: '14px', borderRadius: '14px', padding: '12px 16px' },
+          success: { iconTheme: { primary: '#059669', secondary: '#fff' } },
+          error: { iconTheme: { primary: '#e11d48', secondary: '#fff' } },
         }}
       />
       <Routes>
