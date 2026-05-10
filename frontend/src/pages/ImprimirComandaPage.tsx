@@ -140,7 +140,6 @@ export default function ImprimirComandaPage() {
       <div className="grid gap-2 md:grid-cols-3">
         <Via data={data} label="via Cliente" />
         <Via data={data} label="via Lavanderia" />
-        <Via data={data} label="via Caixa" />
       </div>
       <div className="mt-3 text-center text-[10px] text-rose-600">
         Estou ciente que as roupas não retiradas em 90 dias serão colocadas à venda.
