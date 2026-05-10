@@ -141,9 +141,6 @@ export default function ImprimirComandaPage() {
         <Via data={data} label="via Cliente" />
         <Via data={data} label="via Lavanderia" />
       </div>
-      <div className="mt-3 shrink-0 text-center text-[10px] text-rose-600 print:mt-2">
-        Estou ciente que as roupas não retiradas em 90 dias serão colocadas à venda.
-      </div>
     </div>
   );
 }
