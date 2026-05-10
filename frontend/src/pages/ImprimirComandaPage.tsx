@@ -18,8 +18,8 @@ function Via({ data, label }: { data: Impressao; label: string }) {
       <header className="mb-2 flex items-center justify-between border-b border-dashed border-slate-300 pb-2">
         <div>
           <div className="text-base font-bold">Smart Limp</div>
-          <div>Rua Dos Ciclames, 107 - Vila Lucia - SP</div>
-          <div>Tel: (11) 5058-9041 / Cel: (11) 9 4230-7072</div>
+          <div>Rua Marcos Luiz Sposaro, 98 - Nova Petrópolis - São Bernardo do Campo - SP</div>
+          <div>Cel: (11) 9 4230-7072 / (11) 9 4230-7072</div>
         </div>
         <div className="text-right">
           <div className="text-lg font-bold">#{data.numero}</div>
@@ -108,11 +108,22 @@ export default function ImprimirComandaPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setError('Comanda inválida (sem ID na URL).');
+      return;
+    }
+    let cancelled = false;
     api
       .get<Impressao>(`/comandas/${id}/impressao`)
-      .then(({ data }) => setData(data))
-      .catch((err) => setError(extractError(err, 'Erro ao carregar comanda')));
+      .then(({ data: d }) => {
+        if (!cancelled) setData(d);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(extractError(err, 'Erro ao carregar comanda'));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {

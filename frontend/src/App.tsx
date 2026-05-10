@@ -17,6 +17,14 @@ function PrivateRoute({ children }: { children: JSX.Element }) {
   return children;
 }
 
+/** Impressão: valida só o JWT (localStorage). Evita aba nova sem `usuario` hidratado no contexto. */
+function RequireAuthToken({ children }: { children: JSX.Element }) {
+  const token =
+    typeof window !== 'undefined' ? window.localStorage.getItem('smartlimp:token') : null;
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <>
@@ -36,9 +44,9 @@ export default function App() {
         <Route
           path="/comandas/:id/imprimir"
           element={
-            <PrivateRoute>
+            <RequireAuthToken>
               <ImprimirComandaPage />
-            </PrivateRoute>
+            </RequireAuthToken>
           }
         />
 

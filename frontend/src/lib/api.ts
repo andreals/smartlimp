@@ -21,7 +21,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('smartlimp:token');
       localStorage.removeItem('smartlimp:usuario');
-      if (window.location.pathname !== '/login') {
+      const path = window.location.pathname;
+      const isLogin = path === '/login';
+      const isPrint = path.includes('/imprimir');
+      if (!isLogin && !isPrint) {
         window.location.href = '/login';
       }
     }
