@@ -278,8 +278,6 @@ export default function ClientesPage() {
                 <label>Nome*</label>
                 <input
                   className="input mt-1 uppercase"
-                  required
-                  minLength={5}
                   value={form.nome}
                   onChange={(e) => setForm({ ...form, nome: e.target.value })}
                   onBlur={(e) => buscarParecidos(e.target.value)}
@@ -387,7 +385,6 @@ export default function ClientesPage() {
                 <label>CEP*</label>
                 <input
                   className="input mt-1"
-                  required
                   value={form.cep}
                   onChange={(e) => setForm({ ...form, cep: maskCEP(e.target.value) })}
                 />
@@ -396,7 +393,6 @@ export default function ClientesPage() {
                 <label>Número*</label>
                 <input
                   className="input mt-1"
-                  required
                   value={form.numero}
                   onChange={(e) => setForm({ ...form, numero: e.target.value })}
                 />
@@ -405,7 +401,6 @@ export default function ClientesPage() {
                 <label>UF*</label>
                 <input
                   className="input mt-1 uppercase"
-                  required
                   maxLength={2}
                   value={form.uf}
                   onChange={(e) => setForm({ ...form, uf: e.target.value.toUpperCase() })}
@@ -415,7 +410,6 @@ export default function ClientesPage() {
                 <label>Logradouro*</label>
                 <input
                   className="input mt-1 uppercase"
-                  required
                   value={form.logradouro}
                   onChange={(e) => setForm({ ...form, logradouro: e.target.value })}
                 />
@@ -424,7 +418,6 @@ export default function ClientesPage() {
                 <label>Bairro*</label>
                 <input
                   className="input mt-1"
-                  required
                   value={form.bairro}
                   onChange={(e) => setForm({ ...form, bairro: e.target.value })}
                 />
@@ -433,7 +426,6 @@ export default function ClientesPage() {
                 <label>Cidade*</label>
                 <input
                   className="input mt-1"
-                  required
                   value={form.cidade}
                   onChange={(e) => setForm({ ...form, cidade: e.target.value })}
                 />

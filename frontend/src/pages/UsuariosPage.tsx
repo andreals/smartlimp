@@ -203,7 +203,6 @@ export default function UsuariosPage() {
             <label>Nome*</label>
             <input
               className="input mt-1"
-              required
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
             />
@@ -212,7 +211,6 @@ export default function UsuariosPage() {
             <label>Login*</label>
             <input
               className="input mt-1"
-              required
               value={form.login}
               onChange={(e) => setForm({ ...form, login: e.target.value })}
             />

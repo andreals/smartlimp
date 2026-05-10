@@ -202,8 +202,6 @@ export default function PecasPage() {
             <label>Nome*</label>
             <input
               className="input mt-1 uppercase"
-              required
-              minLength={4}
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
             />
@@ -221,7 +219,6 @@ export default function PecasPage() {
                 <label>{label}*</label>
                 <input
                   className="input mt-1"
-                  required
                   value={form[key]}
                   onChange={(e) => setForm({ ...form, [key]: maskBRLInput(e.target.value) })}
                   placeholder="0,00"

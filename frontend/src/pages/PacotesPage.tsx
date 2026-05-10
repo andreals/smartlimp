@@ -184,7 +184,6 @@ export default function PacotesPage() {
             <label>Nome*</label>
             <input
               className="input mt-1"
-              required
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
             />
@@ -202,7 +201,6 @@ export default function PacotesPage() {
               <label>Preço (R$)*</label>
               <input
                 className="input mt-1"
-                required
                 value={form.preco}
                 onChange={(e) => setForm({ ...form, preco: maskBRLInput(e.target.value) })}
                 placeholder="0,00"
@@ -212,9 +210,7 @@ export default function PacotesPage() {
               <label>Quantidade*</label>
               <input
                 className="input mt-1"
-                required
                 type="number"
-                min={1}
                 value={form.quantidade}
                 onChange={(e) => setForm({ ...form, quantidade: e.target.value })}
               />
