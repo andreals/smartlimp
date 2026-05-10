@@ -44,7 +44,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.db.Query(sqlStmt, args...)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao listar usuários")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao listar usuários", err)
 		return
 	}
 	defer rows.Close()
@@ -53,7 +53,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var u Usuario
 		if err := rows.Scan(&u.ID, &u.Nome, &u.Login, &u.Senha, &u.Status); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler usuários")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler usuários", err)
 			return
 		}
 		out = append(out, u)
@@ -69,10 +69,10 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	var u Usuario
 	if err := row.Scan(&u.ID, &u.Nome, &u.Login, &u.Senha, &u.Status); err != nil {
 		if err == sql.ErrNoRows {
-			httpx.Error(w, http.StatusNotFound, "usuário não encontrado")
+			httpx.Error(w, r, http.StatusNotFound, "usuário não encontrado")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "erro ao ler usuário")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler usuário", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, u)
@@ -91,17 +91,17 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	var p savePayload
 	if err := httpx.Decode(r, &p); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "payload inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
 	if len(strings.TrimSpace(p.Nome)) < 4 ||
 		len(strings.TrimSpace(p.Login)) < 3 ||
 		len(strings.TrimSpace(p.Senha)) < 5 {
-		httpx.Error(w, http.StatusBadRequest, "campos obrigatórios incompletos")
+		httpx.Error(w, r, http.StatusBadRequest, "campos obrigatórios incompletos")
 		return
 	}
 	if p.Status != "ativo" && p.Status != "inativo" {
-		httpx.Error(w, http.StatusBadRequest, "status inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "status inválido")
 		return
 	}
 
@@ -117,7 +117,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			p.Nome, p.Login, senha, p.Status, *p.ID,
 		)
 		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao atualizar usuário")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar usuário", err)
 			return
 		}
 		httpx.JSON(w, http.StatusOK, map[string]any{"id": *p.ID})
@@ -131,7 +131,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		user.UserID, time.Now().Format("2006-01-02 15:04:05"), p.Nome, p.Login, senha, p.Status,
 	).Scan(&newID)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao cadastrar usuário")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao cadastrar usuário", err)
 		return
 	}
 	httpx.JSON(w, http.StatusCreated, map[string]any{"id": newID})

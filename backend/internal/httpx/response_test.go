@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -24,7 +25,8 @@ func TestJSON(t *testing.T) {
 
 func TestError(t *testing.T) {
 	w := httptest.NewRecorder()
-	Error(w, 400, "bad")
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	Error(w, r, 400, "bad")
 	if !strings.Contains(w.Body.String(), `"error":"bad"`) {
 		t.Fatalf("body inesperado: %s", w.Body.String())
 	}

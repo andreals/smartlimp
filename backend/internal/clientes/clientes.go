@@ -133,7 +133,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.db.Query(sqlStmt, args...)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao listar clientes")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao listar clientes", err)
 		return
 	}
 	defer rows.Close()
@@ -142,7 +142,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		c, err := scan(rows)
 		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler clientes")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler clientes", err)
 			return
 		}
 		out = append(out, toOut(c))
@@ -154,18 +154,18 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	rows, err := h.db.Query(baseSelect+" WHERE x1.id = $1", id)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar cliente")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar cliente", err)
 		return
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		httpx.Error(w, http.StatusNotFound, "cliente não encontrado")
+		httpx.Error(w, r, http.StatusNotFound, "cliente não encontrado")
 		return
 	}
 	c, err := scan(rows)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao ler cliente")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler cliente", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, toOut(c))
@@ -196,7 +196,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	var p savePayload
 	if err := httpx.Decode(r, &p); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "payload inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
 	if len(strings.TrimSpace(p.Nome)) < 5 ||
@@ -206,7 +206,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		strings.TrimSpace(p.Bairro) == "" ||
 		strings.TrimSpace(p.Cidade) == "" ||
 		strings.TrimSpace(p.UF) == "" {
-		httpx.Error(w, http.StatusBadRequest, "campos obrigatórios inválidos")
+		httpx.Error(w, r, http.StatusBadRequest, "campos obrigatórios inválidos")
 		return
 	}
 
@@ -220,7 +220,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			p.Bairro, p.Cidade, p.UF, p.Status, *p.ID,
 		)
 		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao atualizar cliente")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar cliente", err)
 			return
 		}
 		httpx.JSON(w, http.StatusOK, map[string]any{"id": *p.ID})
@@ -238,7 +238,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		p.Bairro, p.Cidade, p.UF, p.Status,
 	).Scan(&newID)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao cadastrar cliente")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao cadastrar cliente", err)
 		return
 	}
 	httpx.JSON(w, http.StatusCreated, map[string]any{"id": newID})
@@ -271,7 +271,7 @@ func (h *Handler) NomesParecidos(w http.ResponseWriter, r *http.Request) {
 	q := "SELECT id, nome FROM clientes WHERE " + strings.Join(conds, " OR ") + " ORDER BY nome"
 	rows, err := h.db.Query(q, args...)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar clientes")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar clientes", err)
 		return
 	}
 	defer rows.Close()
@@ -280,7 +280,7 @@ func (h *Handler) NomesParecidos(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var p parecidoOut
 		if err := rows.Scan(&p.ID, &p.Nome); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler clientes")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler clientes", err)
 			return
 		}
 		out = append(out, p)
@@ -295,7 +295,7 @@ func (h *Handler) Pontos(w http.ResponseWriter, r *http.Request) {
 		`SELECT COALESCE(SUM(quantidade), 0) FROM cliente_pontos WHERE id_cliente = $1 AND utilizado = 'N'`, id,
 	)
 	if err := row.Scan(&qtd); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar pontos")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar pontos", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"quantidade": qtd})
@@ -308,7 +308,7 @@ func (h *Handler) Saldo(w http.ResponseWriter, r *http.Request) {
 		`SELECT COALESCE(SUM(valor), 0) FROM cliente_saldo WHERE id_cliente = $1 AND utilizado = 'N'`, id,
 	)
 	if err := row.Scan(&valor); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar saldo")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar saldo", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"valor": valor})
@@ -320,10 +320,10 @@ func (h *Handler) ClienteTipo(w http.ResponseWriter, r *http.Request) {
 	row := h.db.QueryRow(`SELECT tipo FROM clientes WHERE id = $1`, id)
 	if err := row.Scan(&tipo); err != nil {
 		if err == sql.ErrNoRows {
-			httpx.Error(w, http.StatusNotFound, "cliente não encontrado")
+			httpx.Error(w, r, http.StatusNotFound, "cliente não encontrado")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar tipo")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar tipo", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"tipo": tipo})

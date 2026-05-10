@@ -28,7 +28,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		`SELECT id, nome, tipo, preco, quantidade FROM pacotes ORDER BY tipo DESC, quantidade ASC`,
 	)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao listar pacotes")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao listar pacotes", err)
 		return
 	}
 	defer rows.Close()
@@ -37,7 +37,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var p Pacote
 		if err := rows.Scan(&p.ID, &p.Nome, &p.Tipo, &p.Preco, &p.Quantidade); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler pacotes")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler pacotes", err)
 			return
 		}
 		out = append(out, p)
@@ -53,10 +53,10 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	var p Pacote
 	if err := row.Scan(&p.ID, &p.Nome, &p.Tipo, &p.Preco, &p.Quantidade); err != nil {
 		if err == sql.ErrNoRows {
-			httpx.Error(w, http.StatusNotFound, "pacote não encontrado")
+			httpx.Error(w, r, http.StatusNotFound, "pacote não encontrado")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "erro ao ler pacote")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler pacote", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, p)
@@ -75,11 +75,11 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	var p savePayload
 	if err := httpx.Decode(r, &p); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "payload inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
 	if strings.TrimSpace(p.Nome) == "" || p.Preco <= 0 || p.Quantidade <= 0 {
-		httpx.Error(w, http.StatusBadRequest, "campos obrigatórios inválidos")
+		httpx.Error(w, r, http.StatusBadRequest, "campos obrigatórios inválidos")
 		return
 	}
 
@@ -89,7 +89,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			p.Nome, p.Tipo, p.Preco, p.Quantidade, *p.ID,
 		)
 		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao atualizar pacote")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar pacote", err)
 			return
 		}
 		httpx.JSON(w, http.StatusOK, map[string]any{"id": *p.ID})
@@ -103,7 +103,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		user.UserID, time.Now().Format("2006-01-02 15:04:05"), p.Nome, p.Tipo, p.Preco, p.Quantidade,
 	).Scan(&newID)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao cadastrar pacote")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao cadastrar pacote", err)
 		return
 	}
 	httpx.JSON(w, http.StatusCreated, map[string]any{"id": newID})

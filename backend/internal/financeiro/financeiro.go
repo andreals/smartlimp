@@ -59,7 +59,7 @@ func (h *Handler) Comandas(w http.ResponseWriter, r *http.Request) {
 		idCliente, dataInicio, dataFim,
 	)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar comandas")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar comandas", err)
 		return
 	}
 	defer rows.Close()
@@ -70,7 +70,7 @@ func (h *Handler) Comandas(w http.ResponseWriter, r *http.Request) {
 		var nome sql.NullString
 		var efet sql.NullString
 		if err := rows.Scan(&c.ID, &nome, &c.Numero, &c.IDCliente, &efet, &c.Data, &c.Valor, &c.Quantidade); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler comandas")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler comandas", err)
 			return
 		}
 		c.Nome = nome.String
@@ -127,7 +127,7 @@ func (h *Handler) Pagantes(w http.ResponseWriter, r *http.Request) {
 		limite, hoje,
 	)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar pagantes")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar pagantes", err)
 		return
 	}
 	defer rows.Close()
@@ -138,7 +138,7 @@ func (h *Handler) Pagantes(w http.ResponseWriter, r *http.Request) {
 		var nome sql.NullString
 		var efet sql.NullString
 		if err := rows.Scan(&c.ID, &nome, &c.Numero, &c.IDCliente, &efet, &c.Data, &c.Valor, &c.Quantidade); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler pagantes")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler pagantes", err)
 			return
 		}
 		c.Nome = nome.String

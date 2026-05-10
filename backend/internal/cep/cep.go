@@ -34,31 +34,31 @@ func NewHandler() *Handler {
 func (h *Handler) Buscar(w http.ResponseWriter, r *http.Request) {
 	cep := strings.ReplaceAll(chi.URLParam(r, "cep"), "-", "")
 	if len(cep) != 8 {
-		httpx.Error(w, http.StatusBadRequest, "cep inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "cep inválido")
 		return
 	}
 
 	resp, err := h.http.Get("https://api.postmon.com.br/v1/cep/" + cep)
 	if err != nil {
-		httpx.Error(w, http.StatusBadGateway, "erro ao consultar cep")
+		httpx.Error(w, r, http.StatusBadGateway, "erro ao consultar cep", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		httpx.Error(w, http.StatusNotFound, "cep não encontrado")
+		httpx.Error(w, r, http.StatusNotFound, "cep não encontrado")
 		return
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao ler resposta cep")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler resposta cep", err)
 		return
 	}
 
 	var pm postmonResponse
 	if err := json.Unmarshal(body, &pm); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "resposta cep inválida")
+		httpx.Error(w, r, http.StatusInternalServerError, "resposta cep inválida", err)
 		return
 	}
 

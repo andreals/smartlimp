@@ -44,23 +44,23 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	var p savePayload
 	if err := httpx.Decode(r, &p); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "payload inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
 	if p.IDCliente == 0 || len(p.DataComanda) != 10 || len(p.PecasComanda) == 0 {
-		httpx.Error(w, http.StatusBadRequest, "campos obrigatórios inválidos")
+		httpx.Error(w, r, http.StatusBadRequest, "campos obrigatórios inválidos")
 		return
 	}
 
 	dataComanda, err := parseBRDate(p.DataComanda)
 	if err != nil {
-		httpx.Error(w, http.StatusBadRequest, "data inválida")
+		httpx.Error(w, r, http.StatusBadRequest, "data inválida")
 		return
 	}
 
 	tx, err := h.db.Begin()
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao iniciar transação")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao iniciar transação", err)
 		return
 	}
 	defer tx.Rollback()
@@ -76,7 +76,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		p.IDCliente,
 	)
 	if err := row.Scan(&clienteNome, &clienteEmail, &clienteTipo, &idPacote); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "cliente inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "cliente inválido")
 		return
 	}
 
@@ -95,7 +95,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, sql.ErrNoRows) {
 			numero = 1
 		} else {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao gerar número")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao gerar número", err)
 			return
 		}
 	}
@@ -107,7 +107,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		user.UserID, time.Now().Format("2006-01-02 15:04:05"),
 		numero, p.IDCliente, dataComanda.Format("2006-01-02"), p.ComandaPagamento,
 	).Scan(&idComanda); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao inserir comanda")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao inserir comanda", err)
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		`UPDATE cliente_saldo SET id_comandautilizou = $1, utilizado = 'S' WHERE id_cliente = $2 AND utilizado = 'N'`,
 		idComanda, p.IDCliente,
 	); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao atualizar saldo")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar saldo", err)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			`INSERT INTO comanda_pecas(id_comanda, id_peca, valor_peca, quantidade, tipo) VALUES ($1,$2,$3,$4,$5)`,
 			idComanda, pe.IDPeca, pe.ValorPeca, pe.QuantidadePeca, pe.Tipo,
 		); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao inserir peças")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao inserir peças", err)
 			return
 		}
 	}
@@ -134,7 +134,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			`INSERT INTO comanda_adicionais(id_comanda, valor, tipo) VALUES ($1,$2, 'desconto')`,
 			idComanda, p.Desconto,
 		); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao inserir desconto")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao inserir desconto", err)
 			return
 		}
 	}
@@ -143,7 +143,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			`INSERT INTO comanda_adicionais(id_comanda, valor, tipo) VALUES ($1,$2, 'acrescimo')`,
 			idComanda, p.Acrescimo,
 		); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao inserir acréscimo")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao inserir acréscimo", err)
 			return
 		}
 	}
@@ -156,7 +156,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			p.IDCliente,
 		)
 		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao consultar pontos")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar pontos", err)
 			return
 		}
 		type pontoRow struct {
@@ -169,7 +169,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			var pr pontoRow
 			if err := pontosRows.Scan(&pr.ID, &pr.IDComanda, &pr.Quantidade); err != nil {
 				pontosRows.Close()
-				httpx.Error(w, http.StatusInternalServerError, "erro ao ler pontos")
+				httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler pontos", err)
 				return
 			}
 			pontos = append(pontos, pr)
@@ -185,7 +185,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 					`UPDATE cliente_pontos SET id_comanda_utilizado = $1, utilizado = 'S' WHERE id = $2`,
 					idComanda, pr.ID,
 				); err != nil {
-					httpx.Error(w, http.StatusInternalServerError, "erro ao utilizar pontos")
+					httpx.Error(w, r, http.StatusInternalServerError, "erro ao utilizar pontos", err)
 					return
 				}
 				pontosUtilizados -= pr.Quantidade
@@ -194,7 +194,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 					`UPDATE cliente_pontos SET quantidade = $1, id_comanda_utilizado = $2, utilizado = 'S' WHERE id = $3`,
 					pontosUtilizados, idComanda, pr.ID,
 				); err != nil {
-					httpx.Error(w, http.StatusInternalServerError, "erro ao utilizar pontos")
+					httpx.Error(w, r, http.StatusInternalServerError, "erro ao utilizar pontos", err)
 					return
 				}
 				if remaining := pr.Quantidade - pontosUtilizados; remaining > 0 {
@@ -202,7 +202,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 						`INSERT INTO cliente_pontos(id_cliente, id_comanda, quantidade, utilizado) VALUES ($1,$2,$3, 'N')`,
 						p.IDCliente, pr.IDComanda, remaining,
 					); err != nil {
-						httpx.Error(w, http.StatusInternalServerError, "erro ao reinserir pontos")
+						httpx.Error(w, r, http.StatusInternalServerError, "erro ao reinserir pontos", err)
 						return
 					}
 				}
@@ -261,14 +261,14 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 				`INSERT INTO cliente_pontos(id_cliente, id_comanda, id_comanda_utilizado, quantidade, utilizado) VALUES ($1, $2, 0, $3, 'N')`,
 				p.IDCliente, idComanda, pontosAcumulados,
 			); err != nil {
-				httpx.Error(w, http.StatusInternalServerError, "erro ao acumular pontos")
+				httpx.Error(w, r, http.StatusInternalServerError, "erro ao acumular pontos", err)
 				return
 			}
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao confirmar comanda")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao confirmar comanda", err)
 		return
 	}
 
@@ -282,29 +282,29 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	tx, err := h.db.Begin()
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao iniciar transação")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao iniciar transação", err)
 		return
 	}
 	defer tx.Rollback()
 
 	if _, err := tx.Exec(`DELETE FROM comanda_pecas WHERE id_comanda = $1`, id); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao excluir peças")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao excluir peças", err)
 		return
 	}
 	if _, err := tx.Exec(`DELETE FROM cliente_pontos WHERE id_comanda = $1`, id); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao excluir pontos")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao excluir pontos", err)
 		return
 	}
 	if _, err := tx.Exec(`DELETE FROM comanda_adicionais WHERE id_comanda = $1`, id); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao excluir adicionais")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao excluir adicionais", err)
 		return
 	}
 	if _, err := tx.Exec(`DELETE FROM comandas WHERE id = $1`, id); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao excluir comanda")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao excluir comanda", err)
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao confirmar exclusão")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao confirmar exclusão", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
@@ -387,7 +387,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		ORDER BY x5.nome
 	`, id)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao buscar comanda")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao buscar comanda", err)
 		return
 	}
 
@@ -424,20 +424,20 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 			&ln.quantidade, &ln.tipo, &ln.valorPeca, &ln.descricao, &ln.entraPacote, &ln.idCli, &ln.pagamentoRow,
 			&ln.freqPag, &ln.diaVenc, &ln.logradouro, &ln.numCasa, &ln.bairro, &ln.cidade, &ln.telefone, &ln.celular); err != nil {
 			rows.Close()
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler comanda")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler comanda", err)
 			return
 		}
 		linhas = append(linhas, ln)
 	}
 	if err := rows.Err(); err != nil {
 		rows.Close()
-		httpx.Error(w, http.StatusInternalServerError, "erro ao ler comanda")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler comanda", err)
 		return
 	}
 	rows.Close()
 
 	if len(linhas) == 0 {
-		httpx.Error(w, http.StatusNotFound, "comanda não encontrada ou sem itens")
+		httpx.Error(w, r, http.StatusNotFound, "comanda não encontrada ou sem itens")
 		return
 	}
 
@@ -673,7 +673,7 @@ func (h *Handler) Pagamento(w http.ResponseWriter, r *http.Request) {
 	}
 	var p payload
 	if err := httpx.Decode(r, &p); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "payload inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
 
@@ -683,13 +683,13 @@ func (h *Handler) Pagamento(w http.ResponseWriter, r *http.Request) {
 			`INSERT INTO cliente_saldo(id_cliente, valor, id_comandagerou) VALUES ($1,$2,$3)`,
 			p.IDCliente, saldo, id,
 		); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao registrar saldo")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao registrar saldo", err)
 			return
 		}
 	}
 
 	if _, err := h.db.Exec(`UPDATE comandas SET efetuou_pagamento = 'S' WHERE id = $1`, id); err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao atualizar comanda")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar comanda", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})

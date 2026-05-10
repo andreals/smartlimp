@@ -18,13 +18,13 @@ func RequireAuth(tm *auth.TokenManager) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			h := r.Header.Get("Authorization")
 			if !strings.HasPrefix(strings.ToLower(h), "bearer ") {
-				httpx.Error(w, http.StatusUnauthorized, "token ausente")
+				httpx.Error(w, r, http.StatusUnauthorized, "token ausente")
 				return
 			}
 			token := strings.TrimSpace(h[len("Bearer "):])
 			claims, err := tm.Parse(token)
 			if err != nil {
-				httpx.Error(w, http.StatusUnauthorized, "token inválido ou expirado")
+				httpx.Error(w, r, http.StatusUnauthorized, "token inválido ou expirado")
 				return
 			}
 			ctx := context.WithValue(r.Context(), userCtxKey, claims)

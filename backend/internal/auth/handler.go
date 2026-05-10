@@ -41,13 +41,13 @@ type loginResponse struct {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := httpx.Decode(r, &req); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "payload inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
 	req.Login = strings.TrimSpace(req.Login)
 	req.Senha = strings.TrimSpace(req.Senha)
 	if req.Login == "" || req.Senha == "" {
-		httpx.Error(w, http.StatusBadRequest, "login e senha são obrigatórios")
+		httpx.Error(w, r, http.StatusBadRequest, "login e senha são obrigatórios")
 		return
 	}
 
@@ -63,26 +63,26 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	)
 	if err := row.Scan(&id, &nome, &login, &senhaBanco, &status); err != nil {
 		if err == sql.ErrNoRows {
-			httpx.Error(w, http.StatusUnauthorized, "login ou senha incorreta")
+			httpx.Error(w, r, http.StatusUnauthorized, "login ou senha incorreta")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "erro ao consultar usuário")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar usuário", err)
 		return
 	}
 
 	hash := md5sum(req.Senha)
 	if !strings.EqualFold(hash, senhaBanco) && req.Senha != senhaBanco {
-		httpx.Error(w, http.StatusUnauthorized, "senha inválida")
+		httpx.Error(w, r, http.StatusUnauthorized, "senha inválida")
 		return
 	}
 	if status == "inativo" {
-		httpx.Error(w, http.StatusForbidden, "usuário inativo")
+		httpx.Error(w, r, http.StatusForbidden, "usuário inativo")
 		return
 	}
 
 	token, exp, err := h.tm.Generate(id, login, nome)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao gerar token")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao gerar token", err)
 		return
 	}
 

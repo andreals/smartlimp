@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -18,7 +19,14 @@ func JSON(w http.ResponseWriter, status int, payload any) {
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
-func Error(w http.ResponseWriter, status int, msg string) {
+func Error(w http.ResponseWriter, r *http.Request, status int, msg string, cause ...error) {
+	if status >= http.StatusInternalServerError {
+		if len(cause) > 0 && cause[0] != nil {
+			log.Printf("erro HTTP %s %s -> %d: %s: %v", r.Method, r.URL.Path, status, msg, cause[0])
+		} else {
+			log.Printf("erro HTTP %s %s -> %d: %s", r.Method, r.URL.Path, status, msg)
+		}
+	}
 	JSON(w, status, ErrorBody{Error: msg})
 }
 

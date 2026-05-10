@@ -30,7 +30,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		`SELECT id, nome, valor_passar, valor_lavar, valor_lavarpassar, valor_tingir, entra_pacote FROM pecas ORDER BY nome`,
 	)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao listar peças")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao listar peças", err)
 		return
 	}
 	defer rows.Close()
@@ -39,7 +39,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var p Peca
 		if err := rows.Scan(&p.ID, &p.Nome, &p.ValorPassar, &p.ValorLavar, &p.ValorLavarPassar, &p.ValorTingir, &p.EntraPacote); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler peças")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler peças", err)
 			return
 		}
 		out = append(out, p)
@@ -55,10 +55,10 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	var p Peca
 	if err := row.Scan(&p.ID, &p.Nome, &p.ValorPassar, &p.ValorLavar, &p.ValorLavarPassar, &p.ValorTingir, &p.EntraPacote); err != nil {
 		if err == sql.ErrNoRows {
-			httpx.Error(w, http.StatusNotFound, "peça não encontrada")
+			httpx.Error(w, r, http.StatusNotFound, "peça não encontrada")
 			return
 		}
-		httpx.Error(w, http.StatusInternalServerError, "erro ao ler peça")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler peça", err)
 		return
 	}
 	httpx.JSON(w, http.StatusOK, p)
@@ -79,15 +79,15 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 	var p savePayload
 	if err := httpx.Decode(r, &p); err != nil {
-		httpx.Error(w, http.StatusBadRequest, "payload inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
 	if len(strings.TrimSpace(p.Nome)) < 4 || p.ValorPassar <= 0 || p.ValorLavar <= 0 || p.ValorLavarPassar <= 0 || p.ValorTingir <= 0 {
-		httpx.Error(w, http.StatusBadRequest, "campos obrigatórios inválidos")
+		httpx.Error(w, r, http.StatusBadRequest, "campos obrigatórios inválidos")
 		return
 	}
 	if p.EntraPacote != "S" && p.EntraPacote != "N" {
-		httpx.Error(w, http.StatusBadRequest, "entra_pacote inválido")
+		httpx.Error(w, r, http.StatusBadRequest, "entra_pacote inválido")
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			p.Nome, p.ValorPassar, p.ValorLavar, p.ValorLavarPassar, p.ValorTingir, p.EntraPacote, *p.ID,
 		)
 		if err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao atualizar peça")
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar peça", err)
 			return
 		}
 		httpx.JSON(w, http.StatusOK, map[string]any{"id": *p.ID})
@@ -111,7 +111,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		user.UserID, time.Now().Format("2006-01-02 15:04:05"), p.Nome, p.ValorPassar, p.ValorLavar, p.ValorLavarPassar, p.ValorTingir, p.EntraPacote,
 	).Scan(&newID)
 	if err != nil {
-		httpx.Error(w, http.StatusInternalServerError, "erro ao cadastrar peça")
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao cadastrar peça", err)
 		return
 	}
 	httpx.JSON(w, http.StatusCreated, map[string]any{"id": newID})
