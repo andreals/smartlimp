@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
 import { formatBRL, maskBRLInput, parseBRL } from '@/lib/format';
@@ -33,6 +33,7 @@ const emptyForm = {
 export default function PecasPage() {
   const [view, setView] = useState<'list' | 'form'>('list');
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [pecas, setPecas] = useState<Peca[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -52,6 +53,15 @@ export default function PecasPage() {
   useEffect(() => {
     carregar();
   }, []);
+
+  const filtered = useMemo(() => {
+    const t = search.trim().toLowerCase();
+    if (!t) return pecas;
+    return pecas.filter((p) => {
+      const pacoteTxt = p.entra_pacote === 'S' ? 'sim pacote' : 'não pacote';
+      return `${p.nome} ${pacoteTxt}`.toLowerCase().includes(t);
+    });
+  }, [pecas, search]);
 
   const novo = () => {
     setForm({ ...emptyForm });
@@ -179,12 +189,29 @@ export default function PecasPage() {
         }
       />
       <div className="card">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <input
+            className="input max-w-sm"
+            placeholder="Buscar por nome..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Buscar peça"
+          />
+          <span className="text-xs text-slate-500">{filtered.length} peça(s)</span>
+        </div>
         {loading ? (
           <Spinner />
-        ) : pecas.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <EmptyState
-            title="Nenhuma peça cadastrada"
-            action={<button className="btn-primary" onClick={novo}>Nova Peça</button>}
+            title={pecas.length === 0 ? 'Nenhuma peça cadastrada' : 'Nenhum resultado'}
+            description={pecas.length === 0 ? undefined : 'Tente outro termo de busca.'}
+            action={
+              pecas.length === 0 ? (
+                <button className="btn-primary" onClick={novo}>
+                  Nova Peça
+                </button>
+              ) : undefined
+            }
           />
         ) : (
           <div className="overflow-x-auto">
@@ -201,7 +228,7 @@ export default function PecasPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {pecas.map((p) => (
+                {filtered.map((p) => (
                   <tr key={p.id}>
                     <td className="font-medium text-slate-800">{p.nome}</td>
                     <td>{formatBRL(p.valor_lavar)}</td>

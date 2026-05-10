@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
 import { md5 } from '@/lib/format';
@@ -33,6 +33,7 @@ const emptyForm = {
 export default function UsuariosPage() {
   const [view, setView] = useState<'list' | 'form'>('list');
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -43,7 +44,7 @@ export default function UsuariosPage() {
       const { data } = await api.get<Usuario[]>('/usuarios');
       setUsuarios(data);
     } catch (err) {
-      toast.error(extractError(err, 'Erro ao carregar usu?rios'));
+      toast.error(extractError(err, 'Erro ao carregar usuários'));
     } finally {
       setLoading(false);
     }
@@ -52,6 +53,14 @@ export default function UsuariosPage() {
   useEffect(() => {
     carregar();
   }, []);
+
+  const filtered = useMemo(() => {
+    const t = search.trim().toLowerCase();
+    if (!t) return usuarios;
+    return usuarios.filter((u) =>
+      `${u.nome} ${u.login} ${u.status}`.toLowerCase().includes(t),
+    );
+  }, [usuarios, search]);
 
   const novo = () => {
     setForm({ ...emptyForm });
@@ -70,7 +79,7 @@ export default function UsuariosPage() {
       });
       setView('form');
     } catch (err) {
-      toast.error(extractError(err, 'Erro ao carregar usu?rio'));
+      toast.error(extractError(err, 'Erro ao carregar usuário'));
     }
   };
 
@@ -81,7 +90,7 @@ export default function UsuariosPage() {
       return;
     }
     if (!form.id && form.senha.length < 5) {
-      toast.error('Senha deve ter no m?nimo 5 caracteres');
+      toast.error('Senha deve ter no mínimo 5 caracteres');
       return;
     }
     setSaving(true);
@@ -97,11 +106,11 @@ export default function UsuariosPage() {
         senha: senhaHash || undefined,
         status: form.status,
       });
-      toast.success(form.id ? 'Usu?rio atualizado!' : 'Usu?rio cadastrado!');
+      toast.success(form.id ? 'Usuário atualizado!' : 'Usuário cadastrado!');
       setView('list');
       carregar();
     } catch (err) {
-      toast.error(extractError(err, 'Erro ao salvar usu?rio'));
+      toast.error(extractError(err, 'Erro ao salvar usuário'));
     } finally {
       setSaving(false);
     }
@@ -111,7 +120,7 @@ export default function UsuariosPage() {
     return (
       <>
         <PageHeader
-          title={form.id ? 'Editar Usu?rio' : 'Novo Usu?rio'}
+          title={form.id ? 'Editar Usuário' : 'Novo Usuário'}
           actions={
             <button className="btn-secondary" onClick={() => setView('list')}>
               Voltar
@@ -163,7 +172,7 @@ export default function UsuariosPage() {
               Cancelar
             </button>
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar Usu?rio'}
+              {saving ? 'Salvando...' : 'Salvar Usuário'}
             </button>
           </div>
         </form>
@@ -178,17 +187,34 @@ export default function UsuariosPage() {
         subtitle="Operadores do sistema"
         actions={
           <button className="btn-primary" onClick={novo}>
-            Novo Usu?rio
+            Novo Usuário
           </button>
         }
       />
       <div className="card">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <input
+            className="input max-w-sm"
+            placeholder="Buscar por nome ou login..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Buscar usuário"
+          />
+          <span className="text-xs text-slate-500">{filtered.length} usuário(s)</span>
+        </div>
         {loading ? (
           <Spinner />
-        ) : usuarios.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <EmptyState
-            title="Nenhum usu?rio cadastrado"
-            action={<button className="btn-primary" onClick={novo}>Novo Usu?rio</button>}
+            title={usuarios.length === 0 ? 'Nenhum usuário cadastrado' : 'Nenhum resultado'}
+            description={usuarios.length === 0 ? undefined : 'Tente outro termo de busca.'}
+            action={
+              usuarios.length === 0 ? (
+                <button className="btn-primary" onClick={novo}>
+                  Novo Usuário
+                </button>
+              ) : undefined
+            }
           />
         ) : (
           <div className="overflow-x-auto">
@@ -202,7 +228,7 @@ export default function UsuariosPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {usuarios.map((u) => (
+                {filtered.map((u) => (
                   <tr key={u.id}>
                     <td className="font-medium text-slate-800">{u.nome}</td>
                     <td>{u.login}</td>

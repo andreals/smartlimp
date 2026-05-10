@@ -12,7 +12,6 @@ import {
 import type { Cliente, ItemComanda, Peca } from '@/types';
 import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
-import EmptyState from '@/components/EmptyState';
 import DateField from '@/components/DateField';
 import TipoServicoRadios, { type TipoServico } from '@/components/TipoServicoRadios';
 import AutocompleteSelect from '@/components/AutocompleteSelect';
@@ -212,11 +211,11 @@ export default function ComandaPage() {
 
   return (
     <>
-      <PageHeader title="Comanda" subtitle="Crie uma nova comanda para o cliente" />
+      <PageHeader dense title="Comanda" subtitle="Crie uma nova comanda para o cliente" />
 
-      <section className="card mb-6">
-        <h2 className="card-title">Dados da comanda</h2>
-        <div className="grid gap-4 md:grid-cols-2">
+      <section className="card mb-4 !p-4 sm:!p-5">
+        <h2 className="card-title !mb-2">Dados da comanda</h2>
+        <div className="grid gap-3 md:grid-cols-2">
           <div>
             <label htmlFor="comanda-cliente">Cliente*</label>
             <AutocompleteSelect
@@ -243,21 +242,27 @@ export default function ComandaPage() {
             <input
               type="number"
               min={1}
-              className="input mt-1"
+              className="input mt-1 py-2"
               value={quantidade}
               onChange={(e) => setQuantidade(e.target.value)}
             />
           </div>
-          <div className="md:col-span-2">
-            <TipoServicoRadios name="comanda-tipo-servico" value={tipo} onChange={setTipo} legend="Tipo*" />
-          </div>
         </div>
-        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
-          <button type="button" className="btn-primary" onClick={adicionarItem}>
+        <div className="mt-2">
+          <TipoServicoRadios
+            compact
+            name="comanda-tipo-servico"
+            value={tipo}
+            onChange={setTipo}
+            legend="Tipo*"
+          />
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <button type="button" className="btn-primary py-2" onClick={adicionarItem}>
             Adicionar peça
           </button>
           {idCliente && (
-            <span className="text-sm text-slate-600">
+            <span className="text-xs text-slate-600 sm:text-sm">
               {tipoCliente && <span className="capitalize">Cliente {tipoCliente} • </span>}
               Pontos: <strong className="font-semibold text-slate-800">{pontosDisponiveis}</strong> • Saldo:{' '}
               <strong className="font-semibold text-slate-800">{formatBRL(saldoCliente)}</strong>
@@ -266,34 +271,33 @@ export default function ComandaPage() {
         </div>
       </section>
 
-      <section className="card mb-6">
-        <h2 className="card-title">Itens</h2>
+      <section className="card mb-4 !p-4 sm:!p-5">
+        <h2 className="card-title !mb-2">Itens</h2>
         {itens.length === 0 ? (
-          <EmptyState
-            title="Nenhuma peça na comanda"
-            description="Selecione cliente, peça, quantidade e tipo de serviço, depois clique em Adicionar peça."
-          />
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-5 text-center text-sm leading-snug text-slate-600">
+            Nenhuma peça ainda. Preencha os campos acima e clique em <span className="font-semibold">Adicionar peça</span>.
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="table-base">
+            <table className="table-base text-sm">
               <thead>
                 <tr>
-                  <th className="w-24">Qtd</th>
-                  <th>Descrição</th>
-                  <th>Serviço</th>
-                  <th>Valor</th>
-                  <th>Sub-Total</th>
-                  <th></th>
+                  <th className="w-20 py-2">Qtd</th>
+                  <th className="py-2">Descrição</th>
+                  <th className="py-2">Serviço</th>
+                  <th className="py-2">Valor</th>
+                  <th className="py-2">Sub-Total</th>
+                  <th className="py-2" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {itens.map((i) => (
                   <tr key={i.id}>
-                    <td className="align-middle">
+                    <td className="py-2 align-middle">
                       <input
                         type="number"
                         min={1}
-                        className="input w-full min-w-[4.5rem] py-1.5 text-sm"
+                        className="input w-full min-w-[4rem] py-1.5 text-sm"
                         value={i.quantidade_peca}
                         onChange={(e) => {
                           const v = parseInt(e.target.value, 10);
@@ -302,16 +306,16 @@ export default function ComandaPage() {
                         }}
                       />
                     </td>
-                    <td className="font-medium text-slate-800">{i.descricao}</td>
-                    <td>{tipoLabel[i.tipo]}</td>
-                    <td className="tabular-nums">{formatBRL(i.valor_peca)}</td>
-                    <td className="tabular-nums text-slate-800">
+                    <td className="py-2 font-medium text-slate-800">{i.descricao}</td>
+                    <td className="py-2">{tipoLabel[i.tipo]}</td>
+                    <td className="py-2 tabular-nums">{formatBRL(i.valor_peca)}</td>
+                    <td className="py-2 tabular-nums text-slate-800">
                       {formatBRL(i.valor_peca * i.quantidade_peca)}
                     </td>
-                    <td className="text-right">
+                    <td className="py-2 text-right">
                       <button
                         type="button"
-                        className="btn-danger !rounded-lg !px-3 !py-1 !text-xs"
+                        className="btn-danger !rounded-lg !px-2.5 !py-1 !text-xs"
                         onClick={() => removerItem(i.id)}
                       >
                         Remover
@@ -325,13 +329,13 @@ export default function ComandaPage() {
         )}
       </section>
 
-      <section className="card mb-6">
-        <h2 className="card-title">Desconto e acréscimo</h2>
-        <div className="grid gap-4 md:grid-cols-2">
+      <section className="card mb-4 !p-4 sm:!p-5">
+        <h2 className="card-title !mb-2">Desconto e acréscimo</h2>
+        <div className="grid gap-3 md:grid-cols-2">
           <div>
             <label className="text-emerald-700">Desconto</label>
             <input
-              className="input mt-1"
+              className="input mt-1 py-2"
               value={desconto}
               onChange={(e) => setDesconto(maskBRLInput(e.target.value))}
             />
@@ -339,7 +343,7 @@ export default function ComandaPage() {
           <div>
             <label className="text-rose-700">Acréscimo</label>
             <input
-              className="input mt-1"
+              className="input mt-1 py-2"
               value={acrescimo}
               onChange={(e) => setAcrescimo(maskBRLInput(e.target.value))}
             />
@@ -347,27 +351,27 @@ export default function ComandaPage() {
         </div>
       </section>
 
-      <section className="card mb-6">
-        <h2 className="card-title">Resumo</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="stat-tile">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pontos a acumular</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{totals.pontosAcumulados}</p>
+      <section className="card mb-4 !p-4 sm:!p-5">
+        <h2 className="card-title !mb-2">Resumo</h2>
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+          <div className="stat-tile py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Pontos a acumular</p>
+            <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{totals.pontosAcumulados}</p>
           </div>
-          <div className="stat-tile">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Saldo cliente</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{formatBRL(saldoCliente)}</p>
+          <div className="stat-tile py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Saldo cliente</p>
+            <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{formatBRL(saldoCliente)}</p>
           </div>
-          <div className="stat-tile">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total de peças</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{totals.totalPecas}</p>
+          <div className="stat-tile py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Total de peças</p>
+            <p className="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{totals.totalPecas}</p>
           </div>
-          <div className="stat-tile border-brand-200/60 bg-gradient-to-br from-brand-50/80 to-white">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-800/80">Valor total</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-brand-700">{formatBRL(totals.total)}</p>
+          <div className="stat-tile border-brand-200/60 bg-gradient-to-br from-brand-50/80 to-white py-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-800/80">Valor total</p>
+            <p className="mt-0.5 text-xl font-bold tabular-nums text-brand-700">{formatBRL(totals.total)}</p>
           </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-6">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
           <label className="inline-flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
             <input
               type="checkbox"

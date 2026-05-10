@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
 import { formatBRL, maskBRLInput, parseBRL } from '@/lib/format';
@@ -7,6 +7,13 @@ import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import TipoServicoRadios, { type TipoServico, TipoServicoListBadge } from '@/components/TipoServicoRadios';
+
+const tipoBuscaLabel: Record<string, string> = {
+  lavar: 'lavar lavagem',
+  passar: 'passar passadoria',
+  lavarpassar: 'lavar e passar completo',
+  tingir: 'tingir coloração',
+};
 
 const emptyForm = {
   id: undefined as number | undefined,
@@ -19,6 +26,7 @@ const emptyForm = {
 export default function PacotesPage() {
   const [view, setView] = useState<'list' | 'form'>('list');
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const [pacotes, setPacotes] = useState<Pacote[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -38,6 +46,16 @@ export default function PacotesPage() {
   useEffect(() => {
     carregar();
   }, []);
+
+  const filtered = useMemo(() => {
+    const t = search.trim().toLowerCase();
+    if (!t) return pacotes;
+    return pacotes.filter((p) => {
+      const tipoTxt = tipoBuscaLabel[p.tipo] ?? p.tipo;
+      const hay = `${p.nome} ${tipoTxt} ${p.quantidade} ${p.preco}`.toLowerCase();
+      return hay.includes(t);
+    });
+  }, [pacotes, search]);
 
   const novo = () => {
     setForm({ ...emptyForm });
@@ -158,12 +176,29 @@ export default function PacotesPage() {
         }
       />
       <div className="card">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <input
+            className="input max-w-sm"
+            placeholder="Buscar por nome, tipo ou quantidade..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Buscar pacote"
+          />
+          <span className="text-xs text-slate-500">{filtered.length} pacote(s)</span>
+        </div>
         {loading ? (
           <Spinner />
-        ) : pacotes.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <EmptyState
-            title="Nenhum pacote cadastrado"
-            action={<button className="btn-primary" onClick={novo}>Novo Pacote</button>}
+            title={pacotes.length === 0 ? 'Nenhum pacote cadastrado' : 'Nenhum resultado'}
+            description={pacotes.length === 0 ? undefined : 'Tente outro termo de busca.'}
+            action={
+              pacotes.length === 0 ? (
+                <button className="btn-primary" onClick={novo}>
+                  Novo Pacote
+                </button>
+              ) : undefined
+            }
           />
         ) : (
           <div className="overflow-x-auto">
@@ -178,7 +213,7 @@ export default function PacotesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {pacotes.map((p) => (
+                {filtered.map((p) => (
                   <tr key={p.id}>
                     <td className="font-medium text-slate-800">{p.nome}</td>
                     <td className="align-middle">

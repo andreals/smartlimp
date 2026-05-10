@@ -89,19 +89,39 @@ interface Props {
   value: TipoServico | '';
   onChange: (v: TipoServico | '') => void;
   legend?: string;
+  /** Cards menores e sem subtítulo — menos altura na página. */
+  compact?: boolean;
 }
 
-export default function TipoServicoRadios({ name, value, onChange, legend = 'Tipo de serviço' }: Props) {
+export default function TipoServicoRadios({
+  name,
+  value,
+  onChange,
+  legend = 'Tipo de serviço',
+  compact = false,
+}: Props) {
   return (
     <fieldset className="m-0 min-w-0 border-0 p-0">
-      <legend className="mb-1.5 text-sm font-medium text-slate-600">{legend}</legend>
-      <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
+      <legend className={compact ? 'mb-1 text-xs font-medium text-slate-600' : 'mb-1.5 text-sm font-medium text-slate-600'}>
+        {legend}
+      </legend>
+      <div
+        className={
+          compact
+            ? 'grid grid-cols-2 gap-1 sm:grid-cols-4'
+            : 'grid grid-cols-2 gap-1.5 lg:grid-cols-4'
+        }
+      >
         {OPTIONS.map(({ value: v, label, hint, Icon }) => {
           const checked = value === v;
           return (
             <label
               key={v}
-              className={`relative flex cursor-pointer flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-center transition ${
+              className={`relative flex cursor-pointer flex-col items-center text-center transition ${
+                compact
+                  ? 'gap-0.5 rounded-md border px-1 py-1'
+                  : 'gap-1 rounded-lg border px-1.5 py-1.5'
+              } ${
                 checked
                   ? 'border-brand-500 bg-gradient-to-b from-brand-50/90 to-white shadow-sm shadow-brand-500/10 ring-1 ring-brand-500/25'
                   : 'border-slate-200/90 bg-white/80 hover:border-slate-300 hover:bg-slate-50/80'
@@ -116,17 +136,21 @@ export default function TipoServicoRadios({ name, value, onChange, legend = 'Tip
                 className="sr-only"
               />
               <div
-                className={`flex h-7 w-7 items-center justify-center rounded-md ${
-                  checked ? 'bg-brand-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600'
-                }`}
+                className={`flex items-center justify-center rounded ${
+                  compact ? 'h-6 w-6' : 'h-7 w-7 rounded-md'
+                } ${checked ? 'bg-brand-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600'}`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className={compact ? 'h-3 w-3' : 'h-4 w-4'} />
               </div>
               <div className="min-w-0 px-0.5">
-                <div className={`text-[11px] font-semibold leading-tight ${checked ? 'text-brand-900' : 'text-slate-800'}`}>
+                <div
+                  className={`font-semibold leading-tight ${
+                    compact ? 'text-[10px] whitespace-normal' : 'text-[11px]'
+                  } ${checked ? 'text-brand-900' : 'text-slate-800'}`}
+                >
                   {label}
                 </div>
-                <div className="mt-px text-[9px] leading-snug text-slate-500">{hint}</div>
+                {!compact && <div className="mt-px text-[9px] leading-snug text-slate-500">{hint}</div>}
               </div>
             </label>
           );
