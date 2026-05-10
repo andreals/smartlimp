@@ -95,13 +95,31 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(strings.TrimSpace(p.Nome)) < 4 ||
-		len(strings.TrimSpace(p.Login)) < 3 ||
-		len(strings.TrimSpace(p.Senha)) < 5 {
+		len(strings.TrimSpace(p.Login)) < 3 {
+		httpx.Error(w, r, http.StatusBadRequest, "campos obrigatórios incompletos")
+		return
+	}
+	isUpdate := p.ID != nil && *p.ID > 0
+	senhaNova := strings.TrimSpace(p.Senha)
+	if !isUpdate && len(senhaNova) < 5 {
 		httpx.Error(w, r, http.StatusBadRequest, "campos obrigatórios incompletos")
 		return
 	}
 	if p.Status != "ativo" && p.Status != "inativo" {
 		httpx.Error(w, r, http.StatusBadRequest, "status inválido")
+		return
+	}
+
+	if isUpdate && senhaNova == "" {
+		_, err := h.db.Exec(
+			`UPDATE usuarios SET nome = $1, login = $2, status = $3 WHERE id = $4`,
+			p.Nome, p.Login, p.Status, *p.ID,
+		)
+		if err != nil {
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar usuário", err)
+			return
+		}
+		httpx.JSON(w, http.StatusOK, map[string]any{"id": *p.ID})
 		return
 	}
 
@@ -111,7 +129,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		senha = hex.EncodeToString(sum[:])
 	}
 
-	if p.ID != nil && *p.ID > 0 {
+	if isUpdate {
 		_, err := h.db.Exec(
 			`UPDATE usuarios SET nome = $1, login = $2, senha = $3, status = $4 WHERE id = $5`,
 			p.Nome, p.Login, senha, p.Status, *p.ID,
