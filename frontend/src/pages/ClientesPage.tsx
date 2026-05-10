@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import ChoiceChips from '@/components/ChoiceChips';
+import AutocompleteSelect from '@/components/AutocompleteSelect';
 
 const iconAvulso = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
@@ -96,6 +97,22 @@ export default function ClientesPage() {
       `${c.nome} ${c.bairro} ${c.celular} ${c.telefone}`.toLowerCase().includes(t),
     );
   }, [clientes, search]);
+
+  const pacoteOptions = useMemo(
+    () => pacotes.map((p) => ({ value: String(p.id), label: p.nome })),
+    [pacotes],
+  );
+
+  const frequenciaOptions = useMemo(
+    () => [
+      { value: 'diario', label: 'Diário' },
+      { value: 'semanal', label: 'Semanal' },
+      { value: 'dezenal', label: 'Dezenal' },
+      { value: 'quinzenal', label: 'Quinzenal' },
+      { value: 'mensal', label: 'Mensal' },
+    ],
+    [],
+  );
 
   const novo = () => {
     setForm({ ...emptyForm });
@@ -240,19 +257,14 @@ export default function ClientesPage() {
                 )}
               </div>
               <div>
-                <label>Pacote</label>
-                <select
-                  className="input mt-1"
+                <label htmlFor="cliente-pacote">Pacote</label>
+                <AutocompleteSelect
+                  id="cliente-pacote"
+                  options={pacoteOptions}
                   value={form.id_pacote}
-                  onChange={(e) => setForm({ ...form, id_pacote: e.target.value })}
-                >
-                  <option value="">Sem pacote</option>
-                  {pacotes.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nome}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(id_pacote) => setForm({ ...form, id_pacote })}
+                  placeholder="Sem pacote — digite para buscar"
+                />
               </div>
               <div>
                 <label>E-mail</label>
@@ -310,20 +322,16 @@ export default function ClientesPage() {
                 />
               </div>
               <div>
-                <label>Frequência</label>
-                <select
-                  className="input mt-1"
+                <label htmlFor="cliente-frequencia">Frequência</label>
+                <AutocompleteSelect
+                  id="cliente-frequencia"
+                  options={frequenciaOptions}
                   value={form.frequencia_pagamento}
-                  onChange={(e) =>
-                    setForm({ ...form, frequencia_pagamento: e.target.value })
+                  onChange={(frequencia_pagamento) =>
+                    setForm({ ...form, frequencia_pagamento })
                   }
-                >
-                  <option value="diario">Diário</option>
-                  <option value="semanal">Semanal</option>
-                  <option value="dezenal">Dezenal</option>
-                  <option value="quinzenal">Quinzenal</option>
-                  <option value="mensal">Mensal</option>
-                </select>
+                  placeholder="Frequência de pagamento"
+                />
               </div>
               <div>
                 <label>Dia Vencimento</label>
@@ -371,7 +379,7 @@ export default function ClientesPage() {
               <div className="md:col-span-2">
                 <label>Logradouro*</label>
                 <input
-                  className="input mt-1"
+                  className="input mt-1 uppercase"
                   required
                   value={form.logradouro}
                   onChange={(e) => setForm({ ...form, logradouro: e.target.value })}

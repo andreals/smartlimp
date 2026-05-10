@@ -258,7 +258,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 
 		if pontosAcumulados > 0 {
 			if _, err := tx.Exec(
-				`INSERT INTO cliente_pontos(id_cliente, id_comanda, quantidade, utilizado) VALUES ($1,$2,$3, 'N')`,
+				`INSERT INTO cliente_pontos(id_cliente, id_comanda, id_comanda_utilizado, quantidade, utilizado) VALUES ($1, $2, 0, $3, 'N')`,
 				p.IDCliente, idComanda, pontosAcumulados,
 			); err != nil {
 				httpx.Error(w, http.StatusInternalServerError, "erro ao acumular pontos")

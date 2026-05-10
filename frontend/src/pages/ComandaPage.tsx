@@ -8,6 +8,7 @@ import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import DateField from '@/components/DateField';
 import TipoServicoRadios, { type TipoServico } from '@/components/TipoServicoRadios';
+import AutocompleteSelect from '@/components/AutocompleteSelect';
 
 const STORAGE_KEY = 'smartlimp:comanda';
 
@@ -114,10 +115,23 @@ export default function ComandaPage() {
     setItens((it) => [...it, novo]);
     setQuantidade('');
     setIdPeca('');
-    setTipo('');
   };
 
   const removerItem = (id: string) => setItens((it) => it.filter((i) => i.id !== id));
+
+  const clienteOptions = useMemo(
+    () =>
+      clientes.map((c) => ({
+        value: String(c.id),
+        label: `${c.nome}${c.celular ? ` (${c.celular})` : ''}${c.bairro ? ` — ${c.bairro}` : ''}`,
+      })),
+    [clientes],
+  );
+
+  const pecaOptions = useMemo(
+    () => pecas.map((p) => ({ value: String(p.id), label: p.nome })),
+    [pecas],
+  );
 
   const totals = useMemo(() => {
     const subTotal = itens.reduce((acc, i) => acc + i.valor_peca * i.quantidade_peca, 0);
@@ -188,27 +202,25 @@ export default function ComandaPage() {
         <h2 className="card-title">Dados da comanda</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label>Cliente*</label>
-            <select className="input mt-1" value={idCliente} onChange={(e) => setIdCliente(e.target.value)}>
-              <option value="">Selecione um cliente</option>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome} {c.celular ? `(${c.celular})` : ''} {c.bairro ? `- ${c.bairro}` : ''}
-                </option>
-              ))}
-            </select>
+            <label htmlFor="comanda-cliente">Cliente*</label>
+            <AutocompleteSelect
+              id="comanda-cliente"
+              options={clienteOptions}
+              value={idCliente}
+              onChange={setIdCliente}
+              placeholder="Digite para buscar o cliente…"
+            />
           </div>
           <DateField id="comanda-data" label="Data*" value={dataComanda} onChange={setDataComanda} required />
           <div>
-            <label>Peça</label>
-            <select className="input mt-1" value={idPeca} onChange={(e) => setIdPeca(e.target.value)}>
-              <option value="">Selecione uma peça</option>
-              {pecas.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome}
-                </option>
-              ))}
-            </select>
+            <label htmlFor="comanda-peca">Peça</label>
+            <AutocompleteSelect
+              id="comanda-peca"
+              options={pecaOptions}
+              value={idPeca}
+              onChange={setIdPeca}
+              placeholder="Digite para buscar a peça…"
+            />
           </div>
           <div>
             <label>Quantidade</label>

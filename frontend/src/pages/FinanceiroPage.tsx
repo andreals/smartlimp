@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
 import { formatBRL, isValidBRDate, maskBRLInput, parseBRL } from '@/lib/format';
@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import DateField from '@/components/DateField';
+import AutocompleteSelect from '@/components/AutocompleteSelect';
 
 export default function FinanceiroPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -101,6 +102,11 @@ export default function FinanceiroPage() {
   const totalPecas = comandas.reduce((acc, c) => acc + Number(c.quantidade || 0), 0);
   const totalValor = comandas.reduce((acc, c) => acc + Number(c.valor || 0), 0);
 
+  const clienteOptions = useMemo(
+    () => clientes.map((c) => ({ value: String(c.id), label: c.nome })),
+    [clientes],
+  );
+
   return (
     <>
       <PageHeader title="Financeiro" subtitle="Relatórios financeiros e situação de pagamento" />
@@ -108,13 +114,14 @@ export default function FinanceiroPage() {
       <section className="card mb-6">
         <div className="grid gap-3 md:grid-cols-4">
           <div className="md:col-span-2">
-            <label>Cliente</label>
-            <select className="input mt-1" value={idCliente} onChange={(e) => setIdCliente(e.target.value)}>
-              <option value="">Selecione</option>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </select>
+            <label htmlFor="financeiro-cliente">Cliente</label>
+            <AutocompleteSelect
+              id="financeiro-cliente"
+              options={clienteOptions}
+              value={idCliente}
+              onChange={setIdCliente}
+              placeholder="Digite para buscar…"
+            />
           </div>
           <DateField id="financeiro-data-inicio" label="Data inicial" value={dataInicio} onChange={setDataInicio} />
           <DateField id="financeiro-data-fim" label="Data final" value={dataFim} onChange={setDataFim} />
