@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import ChoiceChips from '@/components/ChoiceChips';
+import Modal from '@/components/Modal';
 
 const iconAtivo = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
@@ -31,12 +32,14 @@ const emptyForm = {
 };
 
 export default function UsuariosPage() {
-  const [view, setView] = useState<'list' | 'form'>('list');
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  const fecharModal = () => setModalOpen(false);
 
   const carregar = async () => {
     setLoading(true);
@@ -64,7 +67,7 @@ export default function UsuariosPage() {
 
   const novo = () => {
     setForm({ ...emptyForm });
-    setView('form');
+    setModalOpen(true);
   };
 
   const editar = async (id: number) => {
@@ -77,7 +80,7 @@ export default function UsuariosPage() {
         senha: '',
         status: data.status,
       });
-      setView('form');
+      setModalOpen(true);
     } catch (err) {
       toast.error(extractError(err, 'Erro ao carregar usuário'));
     }
@@ -90,7 +93,7 @@ export default function UsuariosPage() {
       return;
     }
     if (!form.id && form.senha.length < 5) {
-      toast.error('Senha deve ter no mínimo 5 caracteres');
+      toast.error('Senha deve ter no m?nimo 5 caracteres');
       return;
     }
     setSaving(true);
@@ -107,7 +110,7 @@ export default function UsuariosPage() {
         status: form.status,
       });
       toast.success(form.id ? 'Usuário atualizado!' : 'Usuário cadastrado!');
-      setView('list');
+      fecharModal();
       carregar();
     } catch (err) {
       toast.error(extractError(err, 'Erro ao salvar usuário'));
@@ -115,70 +118,6 @@ export default function UsuariosPage() {
       setSaving(false);
     }
   };
-
-  if (view === 'form') {
-    return (
-      <>
-        <PageHeader
-          title={form.id ? 'Editar Usuário' : 'Novo Usuário'}
-          actions={
-            <button className="btn-secondary" onClick={() => setView('list')}>
-              Voltar
-            </button>
-          }
-        />
-        <form onSubmit={salvar} className="card space-y-4">
-          <div>
-            <label>Nome*</label>
-            <input
-              className="input mt-1"
-              required
-              value={form.nome}
-              onChange={(e) => setForm({ ...form, nome: e.target.value })}
-            />
-          </div>
-          <div>
-            <label>Login*</label>
-            <input
-              className="input mt-1"
-              required
-              value={form.login}
-              onChange={(e) => setForm({ ...form, login: e.target.value })}
-            />
-          </div>
-          <div>
-            <label>Senha {form.id ? '(deixe em branco para manter)' : '*'}</label>
-            <input
-              className="input mt-1"
-              type="password"
-              value={form.senha}
-              onChange={(e) => setForm({ ...form, senha: e.target.value })}
-            />
-          </div>
-          <div>
-            <ChoiceChips
-              legend="Status"
-              name="usuario-status"
-              value={form.status}
-              onChange={(status) => setForm({ ...form, status })}
-              options={[
-                { value: 'ativo', label: 'Ativo', icon: iconAtivo },
-                { value: 'inativo', label: 'Inativo', icon: iconInativo },
-              ]}
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" className="btn-secondary" onClick={() => setView('list')}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar Usuário'}
-            </button>
-          </div>
-        </form>
-      </>
-    );
-  }
 
   return (
     <>
@@ -251,6 +190,64 @@ export default function UsuariosPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={modalOpen}
+        onClose={fecharModal}
+        title={form.id ? 'Editar Usuário' : 'Novo Usuário'}
+        subtitle={form.id ? 'Deixe a senha em branco para manter a atual' : undefined}
+        size="md"
+      >
+        <form onSubmit={salvar} className="space-y-4">
+          <div>
+            <label>Nome*</label>
+            <input
+              className="input mt-1"
+              required
+              value={form.nome}
+              onChange={(e) => setForm({ ...form, nome: e.target.value })}
+            />
+          </div>
+          <div>
+            <label>Login*</label>
+            <input
+              className="input mt-1"
+              required
+              value={form.login}
+              onChange={(e) => setForm({ ...form, login: e.target.value })}
+            />
+          </div>
+          <div>
+            <label>Senha {form.id ? '(opcional)' : '*'}</label>
+            <input
+              className="input mt-1"
+              type="password"
+              value={form.senha}
+              onChange={(e) => setForm({ ...form, senha: e.target.value })}
+            />
+          </div>
+          <div>
+            <ChoiceChips
+              legend="Status"
+              name="usuario-status"
+              value={form.status}
+              onChange={(status) => setForm({ ...form, status })}
+              options={[
+                { value: 'ativo', label: 'Ativo', icon: iconAtivo },
+                { value: 'inativo', label: 'Inativo', icon: iconInativo },
+              ]}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" className="btn-secondary" onClick={fecharModal}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar Usuário'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

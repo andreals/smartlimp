@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import ChoiceChips from '@/components/ChoiceChips';
+import Modal from '@/components/Modal';
 
 const iconYes = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
@@ -31,12 +32,14 @@ const emptyForm = {
 };
 
 export default function PecasPage() {
-  const [view, setView] = useState<'list' | 'form'>('list');
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [pecas, setPecas] = useState<Peca[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  const fecharModal = () => setModalOpen(false);
 
   const carregar = async () => {
     setLoading(true);
@@ -65,7 +68,7 @@ export default function PecasPage() {
 
   const novo = () => {
     setForm({ ...emptyForm });
-    setView('form');
+    setModalOpen(true);
   };
 
   const editar = async (id: number) => {
@@ -80,7 +83,7 @@ export default function PecasPage() {
         valor_tingir: data.valor_tingir.toFixed(2).replace('.', ','),
         entra_pacote: data.entra_pacote,
       });
-      setView('form');
+      setModalOpen(true);
     } catch (err) {
       toast.error(extractError(err, 'Erro ao carregar peça'));
     }
@@ -100,7 +103,7 @@ export default function PecasPage() {
         entra_pacote: form.entra_pacote,
       });
       toast.success(form.id ? 'Peça atualizada!' : 'Peça cadastrada!');
-      setView('list');
+      fecharModal();
       carregar();
     } catch (err) {
       toast.error(extractError(err, 'Erro ao salvar peça'));
@@ -108,74 +111,6 @@ export default function PecasPage() {
       setSaving(false);
     }
   };
-
-  if (view === 'form') {
-    return (
-      <>
-        <PageHeader
-          title={form.id ? 'Editar Peça' : 'Nova Peça'}
-          actions={
-            <button className="btn-secondary" onClick={() => setView('list')}>
-              Voltar
-            </button>
-          }
-        />
-        <form onSubmit={salvar} className="card space-y-4">
-          <div>
-            <label>Nome*</label>
-            <input
-              className="input mt-1 uppercase"
-              required
-              minLength={4}
-              value={form.nome}
-              onChange={(e) => setForm({ ...form, nome: e.target.value })}
-            />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {(
-              [
-                ['valor_lavar', 'Valor Lavar (R$)'],
-                ['valor_passar', 'Valor Passar (R$)'],
-                ['valor_lavarpassar', 'Valor Lavar e Passar (R$)'],
-                ['valor_tingir', 'Valor Tingir (R$)'],
-              ] as const
-            ).map(([key, label]) => (
-              <div key={key}>
-                <label>{label}*</label>
-                <input
-                  className="input mt-1"
-                  required
-                  value={form[key]}
-                  onChange={(e) => setForm({ ...form, [key]: maskBRLInput(e.target.value) })}
-                  placeholder="0,00"
-                />
-              </div>
-            ))}
-          </div>
-          <div>
-            <ChoiceChips
-              legend="Entra no pacote?"
-              name="peca-entra-pacote"
-              value={form.entra_pacote}
-              onChange={(v) => setForm({ ...form, entra_pacote: v })}
-              options={[
-                { value: 'S', label: 'Sim', icon: iconYes },
-                { value: 'N', label: 'Não', icon: iconNo },
-              ]}
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" className="btn-secondary" onClick={() => setView('list')}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar Peça'}
-            </button>
-          </div>
-        </form>
-      </>
-    );
-  }
 
   return (
     <>
@@ -254,6 +189,68 @@ export default function PecasPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={modalOpen}
+        onClose={fecharModal}
+        title={form.id ? 'Editar Peça' : 'Nova Peça'}
+        subtitle="Valores por tipo de serviço"
+        size="lg"
+      >
+        <form onSubmit={salvar} className="space-y-4">
+          <div>
+            <label>Nome*</label>
+            <input
+              className="input mt-1 uppercase"
+              required
+              minLength={4}
+              value={form.nome}
+              onChange={(e) => setForm({ ...form, nome: e.target.value })}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {(
+              [
+                ['valor_lavar', 'Valor Lavar (R$)'],
+                ['valor_passar', 'Valor Passar (R$)'],
+                ['valor_lavarpassar', 'Valor Lavar e Passar (R$)'],
+                ['valor_tingir', 'Valor Tingir (R$)'],
+              ] as const
+            ).map(([key, label]) => (
+              <div key={key}>
+                <label>{label}*</label>
+                <input
+                  className="input mt-1"
+                  required
+                  value={form[key]}
+                  onChange={(e) => setForm({ ...form, [key]: maskBRLInput(e.target.value) })}
+                  placeholder="0,00"
+                />
+              </div>
+            ))}
+          </div>
+          <div>
+            <ChoiceChips
+              legend="Entra no pacote?"
+              name="peca-entra-pacote"
+              value={form.entra_pacote}
+              onChange={(v) => setForm({ ...form, entra_pacote: v })}
+              options={[
+                { value: 'S', label: 'Sim', icon: iconYes },
+                { value: 'N', label: 'Não', icon: iconNo },
+              ]}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" className="btn-secondary" onClick={fecharModal}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar Peça'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

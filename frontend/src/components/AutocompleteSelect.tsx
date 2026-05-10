@@ -177,7 +177,7 @@ export default function AutocompleteSelect({
               left: menuRect.left,
               width: menuRect.width,
               maxHeight: menuRect.maxHeight,
-              zIndex: 100000,
+              zIndex: 300000,
             }}
             className="overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5"
           >

@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import TipoServicoRadios, { type TipoServico, TipoServicoListBadge } from '@/components/TipoServicoRadios';
+import Modal from '@/components/Modal';
 
 const tipoBuscaLabel: Record<string, string> = {
   lavar: 'lavar lavagem',
@@ -24,12 +25,14 @@ const emptyForm = {
 };
 
 export default function PacotesPage() {
-  const [view, setView] = useState<'list' | 'form'>('list');
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [pacotes, setPacotes] = useState<Pacote[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  const fecharModal = () => setModalOpen(false);
 
   const carregar = async () => {
     setLoading(true);
@@ -59,7 +62,7 @@ export default function PacotesPage() {
 
   const novo = () => {
     setForm({ ...emptyForm });
-    setView('form');
+    setModalOpen(true);
   };
 
   const editar = async (id: number) => {
@@ -72,7 +75,7 @@ export default function PacotesPage() {
         preco: data.preco.toFixed(2).replace('.', ','),
         quantidade: String(data.quantidade),
       });
-      setView('form');
+      setModalOpen(true);
     } catch (err) {
       toast.error(extractError(err, 'Erro ao carregar pacote'));
     }
@@ -90,7 +93,7 @@ export default function PacotesPage() {
         quantidade: Number(form.quantidade),
       });
       toast.success(form.id ? 'Pacote atualizado!' : 'Pacote cadastrado!');
-      setView('list');
+      fecharModal();
       carregar();
     } catch (err) {
       toast.error(extractError(err, 'Erro ao salvar pacote'));
@@ -98,71 +101,6 @@ export default function PacotesPage() {
       setSaving(false);
     }
   };
-
-  if (view === 'form') {
-    return (
-      <>
-        <PageHeader
-          title={form.id ? 'Editar Pacote' : 'Novo Pacote'}
-          actions={
-            <button className="btn-secondary" onClick={() => setView('list')}>
-              Voltar
-            </button>
-          }
-        />
-        <form onSubmit={salvar} className="card space-y-4">
-          <div>
-            <label>Nome*</label>
-            <input
-              className="input mt-1"
-              required
-              value={form.nome}
-              onChange={(e) => setForm({ ...form, nome: e.target.value })}
-            />
-          </div>
-          <div>
-            <TipoServicoRadios
-              name="pacote-tipo-servico"
-              legend="Tipo"
-              value={form.tipo}
-              onChange={(v) => v && setForm({ ...form, tipo: v })}
-            />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label>Preço (R$)*</label>
-              <input
-                className="input mt-1"
-                required
-                value={form.preco}
-                onChange={(e) => setForm({ ...form, preco: maskBRLInput(e.target.value) })}
-                placeholder="0,00"
-              />
-            </div>
-            <div>
-              <label>Quantidade*</label>
-              <input
-                className="input mt-1"
-                required
-                type="number"
-                min={1}
-                value={form.quantidade}
-                onChange={(e) => setForm({ ...form, quantidade: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" className="btn-secondary" onClick={() => setView('list')}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar Pacote'}
-            </button>
-          </div>
-        </form>
-      </>
-    );
-  }
 
   return (
     <>
@@ -233,6 +171,65 @@ export default function PacotesPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={modalOpen}
+        onClose={fecharModal}
+        title={form.id ? 'Editar Pacote' : 'Novo Pacote'}
+        subtitle="Tipo de serviço, preço e quantidade"
+        size="lg"
+      >
+        <form onSubmit={salvar} className="space-y-4">
+          <div>
+            <label>Nome*</label>
+            <input
+              className="input mt-1"
+              required
+              value={form.nome}
+              onChange={(e) => setForm({ ...form, nome: e.target.value })}
+            />
+          </div>
+          <div>
+            <TipoServicoRadios
+              name="pacote-tipo-servico"
+              legend="Tipo"
+              value={form.tipo}
+              onChange={(v) => v && setForm({ ...form, tipo: v })}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label>Preço (R$)*</label>
+              <input
+                className="input mt-1"
+                required
+                value={form.preco}
+                onChange={(e) => setForm({ ...form, preco: maskBRLInput(e.target.value) })}
+                placeholder="0,00"
+              />
+            </div>
+            <div>
+              <label>Quantidade*</label>
+              <input
+                className="input mt-1"
+                required
+                type="number"
+                min={1}
+                value={form.quantidade}
+                onChange={(e) => setForm({ ...form, quantidade: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" className="btn-secondary" onClick={fecharModal}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Salvando...' : 'Salvar Pacote'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

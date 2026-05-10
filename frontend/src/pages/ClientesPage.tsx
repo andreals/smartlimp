@@ -8,6 +8,7 @@ import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import ChoiceChips from '@/components/ChoiceChips';
 import AutocompleteSelect from '@/components/AutocompleteSelect';
+import Modal from '@/components/Modal';
 
 const iconAvulso = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3.5 w-3.5">
@@ -84,7 +85,7 @@ const emptyForm = {
 };
 
 export default function ClientesPage() {
-  const [view, setView] = useState<'list' | 'form'>('list');
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -140,8 +141,10 @@ export default function ClientesPage() {
   const novo = () => {
     setForm({ ...emptyForm });
     setParecidos([]);
-    setView('form');
+    setModalOpen(true);
   };
+
+  const fecharModal = () => setModalOpen(false);
 
   const editar = async (id: number) => {
     try {
@@ -165,7 +168,7 @@ export default function ClientesPage() {
         uf: data.uf || '',
         status: data.status,
       });
-      setView('form');
+      setModalOpen(true);
     } catch (err) {
       toast.error(extractError(err, 'Erro ao carregar cliente'));
     }
@@ -233,7 +236,7 @@ export default function ClientesPage() {
       };
       await api.post('/clientes', payload);
       toast.success(form.id ? 'Cliente atualizado!' : 'Cliente cadastrado!');
-      setView('list');
+      fecharModal();
       carregar();
     } catch (err) {
       toast.error(extractError(err, 'Erro ao salvar cliente'));
@@ -242,18 +245,15 @@ export default function ClientesPage() {
     }
   };
 
-  if (view === 'form') {
-    return (
-      <>
-        <PageHeader
-          title={form.id ? 'Editar Cliente' : 'Novo Cliente'}
-          subtitle="Preencha os dados do cliente"
-          actions={
-            <button className="btn-secondary" onClick={() => setView('list')}>
-              Voltar
-            </button>
-          }
-        />
+  return (
+    <>
+      <Modal
+        open={modalOpen}
+        onClose={fecharModal}
+        title={form.id ? 'Editar Cliente' : 'Novo Cliente'}
+        subtitle="Preencha os dados do cliente"
+        size="xl"
+      >
         <form onSubmit={salvar} className="space-y-6">
           <section className="card">
             <h2 className="mb-4 text-base">Identificação</h2>
@@ -440,7 +440,7 @@ export default function ClientesPage() {
           </section>
 
           <div className="flex justify-end gap-2">
-            <button type="button" className="btn-secondary" onClick={() => setView('list')}>
+            <button type="button" className="btn-secondary" onClick={fecharModal}>
               Cancelar
             </button>
             <button type="submit" className="btn-primary" disabled={saving}>
@@ -448,12 +448,7 @@ export default function ClientesPage() {
             </button>
           </div>
         </form>
-      </>
-    );
-  }
-
-  return (
-    <>
+      </Modal>
       <PageHeader
         title="Clientes"
         subtitle="Gerencie sua base de clientes"
