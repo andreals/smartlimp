@@ -1,4 +1,4 @@
--- Smartlimp / Colliclean - schema PostgreSQL
+-- Smartlimp - schema PostgreSQL
 -- Migração inicial: cria todas as tabelas necessárias para o backend Go.
 -- Todos os campos seguem o modelo legado (MySQL), adaptado para Postgres.
 

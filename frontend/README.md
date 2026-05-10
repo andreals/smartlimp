@@ -26,10 +26,16 @@ npm run dev
 A aplicação sobe em `http://localhost:5173` e usa o proxy do Vite para chamar
 o backend em `http://localhost:8080/api`.
 
-Para apontar diretamente para uma URL pública da API, defina:
+Em **produção** (API na Railway, frontend na Vercel), define o URL público da API **sem** `/api`:
+
+- **Vercel:** em Project Settings → Environment Variables, adiciona `VITE_API_URL` = `https://<teu-servico>.up.railway.app` (ou o domínio personalizado da Railway).
+- **Local com API remota:** cria `.env.local`:
+
 ```bash
-echo "VITE_API_URL=https://sua-api.com" > .env.local
+echo "VITE_API_URL=https://<teu-servico>.up.railway.app" > .env.local
 ```
+
+Na Railway, em variáveis do backend, inclui o mesmo domínio do frontend em `CORS_ORIGINS` (ver `backend/README.md`).
 
 ## Build
 ```bash

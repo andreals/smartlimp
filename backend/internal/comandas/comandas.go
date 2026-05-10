@@ -357,7 +357,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		SELECT
 			UPPER(x2.nome) AS cliente,
 			COALESCE(x3.nome, '') AS pacote,
-			COALESCE(x3.tipo, '') AS tipo_pacote,
+			x3.tipo AS tipo_pacote,
 			COALESCE(x3.preco, 0) AS valor_pacote,
 			x1.numero,
 			x2.tipo AS tipo_cliente,
@@ -370,14 +370,14 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 			x5.entra_pacote,
 			x1.id_cliente,
 			x1.pagamento,
-			COALESCE(x2.frequencia_pagamento,'') AS frequencia_pagamento,
-			COALESCE(x2.dia_vencimento,'') AS dia_vencimento,
-			COALESCE(x2.logradouro,'') AS logradouro,
-			COALESCE(x2.numero,'') AS numCasa,
-			COALESCE(x2.bairro,'') AS bairro,
-			COALESCE(x2.cidade,'') AS cidade,
-			COALESCE(x2.telefone,'') AS telefone,
-			COALESCE(x2.celular,'') AS celular
+			x2.frequencia_pagamento,
+			x2.dia_vencimento,
+			COALESCE(x2.logradouro, '') AS logradouro,
+			COALESCE(x2.numero, '') AS numCasa,
+			COALESCE(x2.bairro, '') AS bairro,
+			COALESCE(x2.cidade, '') AS cidade,
+			COALESCE(x2.telefone, '') AS telefone,
+			COALESCE(x2.celular, '') AS celular
 		FROM comandas x1
 		JOIN clientes x2 ON x1.id_cliente = x2.id
 		LEFT JOIN pacotes x3 ON x2.id_pacote = x3.id
@@ -390,7 +390,56 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "erro ao buscar comanda")
 		return
 	}
-	defer rows.Close()
+
+	type impressaoLinha struct {
+		cliente      string
+		pacote       string
+		tipoPac      string
+		vpacote      float64
+		numero       int64
+		tipoClienteR string
+		dataComanda  string
+		dataRow      time.Time
+		quantidade   int
+		tipo         string
+		valorPeca    float64
+		descricao    string
+		entraPacote  string
+		idCli        int64
+		pagamentoRow string
+		freqPag      string
+		diaVenc      string
+		logradouro   string
+		numCasa      string
+		bairro       string
+		cidade       string
+		telefone     string
+		celular      string
+	}
+
+	var linhas []impressaoLinha
+	for rows.Next() {
+		var ln impressaoLinha
+		if err := rows.Scan(&ln.cliente, &ln.pacote, &ln.tipoPac, &ln.vpacote, &ln.numero, &ln.tipoClienteR, &ln.dataComanda, &ln.dataRow,
+			&ln.quantidade, &ln.tipo, &ln.valorPeca, &ln.descricao, &ln.entraPacote, &ln.idCli, &ln.pagamentoRow,
+			&ln.freqPag, &ln.diaVenc, &ln.logradouro, &ln.numCasa, &ln.bairro, &ln.cidade, &ln.telefone, &ln.celular); err != nil {
+			rows.Close()
+			httpx.Error(w, http.StatusInternalServerError, "erro ao ler comanda")
+			return
+		}
+		linhas = append(linhas, ln)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		httpx.Error(w, http.StatusInternalServerError, "erro ao ler comanda")
+		return
+	}
+	rows.Close()
+
+	if len(linhas) == 0 {
+		httpx.Error(w, http.StatusNotFound, "comanda não encontrada ou sem itens")
+		return
+	}
 
 	out := ImpressaoOut{Pecas: []ImpressaoPeca{}}
 	primeiroLoop := true
@@ -408,38 +457,30 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 	frequenciaPgmt := ""
 	diaVencimento := ""
 
-	for rows.Next() {
-		var (
-			cliente      string
-			pacote       string
-			tipoPac      string
-			vpacote      float64
-			numero       int64
-			tipoClienteR string
-			dataComanda  string
-			dataRow      time.Time
-			quantidade   int
-			tipo         string
-			valorPeca    float64
-			descricao    string
-			entraPacote  string
-			pagamentoRow string
-			freqPag      string
-			diaVenc      string
-			logradouro   string
-			numCasa      string
-			bairro       string
-			cidade       string
-			telefone     string
-			celular      string
-		)
-		idCli := int64(0)
-		if err := rows.Scan(&cliente, &pacote, &tipoPac, &vpacote, &numero, &tipoClienteR, &dataComanda, &dataRow,
-			&quantidade, &tipo, &valorPeca, &descricao, &entraPacote, &idCli, &pagamentoRow,
-			&freqPag, &diaVenc, &logradouro, &numCasa, &bairro, &cidade, &telefone, &celular); err != nil {
-			httpx.Error(w, http.StatusInternalServerError, "erro ao ler comanda")
-			return
-		}
+	for _, ln := range linhas {
+		cliente := ln.cliente
+		pacote := ln.pacote
+		tipoPac := ln.tipoPac
+		vpacote := ln.vpacote
+		numero := ln.numero
+		tipoClienteR := ln.tipoClienteR
+		dataComanda := ln.dataComanda
+		dataRow := ln.dataRow
+		quantidade := ln.quantidade
+		tipo := ln.tipo
+		valorPeca := ln.valorPeca
+		descricao := ln.descricao
+		entraPacote := ln.entraPacote
+		idCli := ln.idCli
+		pagamentoRow := ln.pagamentoRow
+		freqPag := ln.freqPag
+		diaVenc := ln.diaVenc
+		logradouro := ln.logradouro
+		numCasa := ln.numCasa
+		bairro := ln.bairro
+		cidade := ln.cidade
+		telefone := ln.telefone
+		celular := ln.celular
 
 		out.Numero = numero
 		out.Cliente = cliente
@@ -571,7 +612,6 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 
 	addRows, err := h.db.Query(`SELECT valor, tipo FROM comanda_adicionais WHERE id_comanda = $1`, id)
 	if err == nil {
-		defer addRows.Close()
 		for addRows.Next() {
 			var v float64
 			var t string
@@ -583,6 +623,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		addRows.Close()
 	}
 
 	var saldo sql.NullFloat64

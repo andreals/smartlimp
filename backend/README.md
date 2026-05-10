@@ -33,6 +33,31 @@ internal/
 migrations/      # scripts SQL versionados (Postgres)
 ```
 
+## Deploy (Railway)
+
+O backend está pronto para **Docker** na Railway.
+
+1. No [Railway](https://railway.app), cria um projeto e um serviço a partir deste repositório.
+2. Em **Settings → Root Directory**, define `backend` (monorepo com `frontend/` na raiz).
+3. Em **Variables**, configura pelo menos:
+   - `DATABASE_URL` — Postgres (ex.: Neon), formato `postgresql://...?sslmode=require`
+   - `JWT_SECRET` — segredo forte (não uses o valor de exemplo)
+   - `CORS_ORIGINS` — URL(s) do frontend na Vercel, separadas por vírgula (ex.: `https://teu-app.vercel.app`)
+   - Opcional: `JWT_TTL_HOURS`, `ENV=production`
+
+A Railway define `PORT` automaticamente; a API já lê essa variável.
+
+4. Primeiro deploy: após o Postgres estar acessível, corre as migrations **uma vez** (localmente com a mesma `DATABASE_URL` ou via shell one-off na Railway):
+
+```bash
+cd backend
+DATABASE_URL='postgresql://...' JWT_SECRET='...' go run ./cmd/migrate
+```
+
+5. No **frontend** (Vercel ou build local), define `VITE_API_URL` com o URL público do serviço Railway **sem** path `/api` (ex.: `https://teu-servico.up.railway.app`).
+
+Ficheiros relevantes: `Dockerfile`, `railway.json` (healthcheck em `/api/health`).
+
 ## Setup
 ```bash
 cp .env.example .env
