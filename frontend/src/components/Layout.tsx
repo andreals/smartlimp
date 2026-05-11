@@ -1,15 +1,23 @@
-import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-const nav = [
+const navMain = [
   { to: '/comanda', label: 'Comanda', icon: 'shopping-cart' },
+  { to: '/gestao', label: 'Gestão', icon: 'pie' },
   { to: '/financeiro', label: 'Financeiro', icon: 'bar-chart' },
+];
+
+const navCadastro = [
   { to: '/clientes', label: 'Clientes', icon: 'users' },
   { to: '/pacotes', label: 'Pacotes', icon: 'box' },
   { to: '/pecas', label: 'Peças', icon: 'tag' },
   { to: '/usuarios', label: 'Usuários', icon: 'user' },
 ];
+
+function isCadastroPath(pathname: string): boolean {
+  return navCadastro.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
+}
 
 const icons: Record<string, JSX.Element> = {
   'shopping-cart': (
@@ -22,6 +30,12 @@ const icons: Record<string, JSX.Element> = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0">
       <line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" />
       <line x1="6" y1="20" x2="6" y2="16" />
+    </svg>
+  ),
+  pie: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0">
+      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+      <path d="M22 12A10 10 0 0 0 12 2v10z" />
     </svg>
   ),
   users: (
@@ -47,6 +61,11 @@ const icons: Record<string, JSX.Element> = {
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
     </svg>
   ),
+  'folder-cadastro': (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
 };
 
 function initials(nome: string | undefined) {
@@ -60,7 +79,27 @@ function initials(nome: string | undefined) {
 export default function Layout() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [cadastroOpen, setCadastroOpen] = useState(false);
+
+  const onCadastroRoute = isCadastroPath(location.pathname);
+
+  const prevPathRef = useRef<string | null>(null);
+  useEffect(() => {
+    const path = location.pathname;
+    const prev = prevPathRef.current;
+    prevPathRef.current = path;
+    if (prev === null) {
+      setCadastroOpen(isCadastroPath(path));
+      return;
+    }
+    if (!isCadastroPath(prev) && isCadastroPath(path)) {
+      setCadastroOpen(true);
+    } else if (isCadastroPath(prev) && !isCadastroPath(path)) {
+      setCadastroOpen(false);
+    }
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -133,7 +172,7 @@ export default function Layout() {
             className="flex flex-col gap-1 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-card backdrop-blur-sm lg:sticky lg:top-24"
             onClick={(e) => e.stopPropagation()}
           >
-            {nav.map((item) => (
+            {navMain.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -156,6 +195,76 @@ export default function Layout() {
                 )}
               </NavLink>
             ))}
+
+            <div className="pt-0.5">
+              <button
+                type="button"
+                onClick={() => setCadastroOpen((v) => !v)}
+                aria-expanded={cadastroOpen}
+                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
+                  onCadastroRoute
+                    ? 'bg-slate-100 text-slate-900 ring-1 ring-slate-200/90'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span
+                  className={
+                    onCadastroRoute ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'
+                  }
+                >
+                  {icons['folder-cadastro']}
+                </span>
+                <span className="min-w-0 flex-1">Cadastro</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+                    cadastroOpen ? 'rotate-180' : ''
+                  }`}
+                  aria-hidden
+                >
+                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              <div
+                className={`overflow-hidden transition-[max-height] duration-200 ease-out ${
+                  cadastroOpen ? 'max-h-80' : 'max-h-0'
+                }`}
+              >
+                <div className="space-y-0.5 border-l border-slate-200/90 py-1 pl-2 ml-3">
+                  {navCadastro.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setOpen(false)}
+                      className={({ isActive }) =>
+                        `group flex items-center gap-2.5 rounded-lg py-2 pl-2 pr-2 text-sm font-semibold transition ${
+                          isActive
+                            ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/25'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <span
+                            className={
+                              isActive ? 'text-white/90' : 'text-slate-400 group-hover:text-slate-600'
+                            }
+                          >
+                            {icons[item.icon]}
+                          </span>
+                          {item.label}
+                        </>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            </div>
           </nav>
         </aside>
 

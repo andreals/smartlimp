@@ -108,3 +108,74 @@ export interface Impressao {
   pontos_utilizados: number;
   valor_pontos: number;
 }
+
+export type DashboardGranularidade = 'dia' | 'semana' | 'mes';
+
+export interface DashboardVolume {
+  periodo: string;
+  pecas: number;
+  comandas: number;
+}
+
+export interface DashboardMix {
+  tipo: string;
+  pecas: number;
+  valor: number;
+  pct_pecas: number;
+  pct_valor: number;
+}
+
+export interface DashboardRankingPeca {
+  id: number;
+  nome: string;
+  quantidade: number;
+  valor: number;
+}
+
+export interface DashboardReceitaTipo {
+  tipo: string;
+  valor: number;
+  comandas: number;
+}
+
+export interface DashboardClientePacote {
+  id_pacote: number;
+  nome_pacote: string;
+  clientes: number;
+}
+
+export interface DashboardClienteRisco {
+  id: number;
+  nome: string;
+  ultima_comanda: string;
+  dias_sem_comanda: number;
+  /** longa = há mais tempo sem pedido; recente = ultrapassou o limite há pouco */
+  perfil?: 'longa' | 'recente';
+  /** fixo | avulso */
+  tipo_cliente?: string;
+}
+
+export interface DashboardResponse {
+  data_inicio: string;
+  data_fim: string;
+  granularidade: DashboardGranularidade;
+  dias_sem_comanda: number;
+  faturamento_total: number;
+  /** Só true quando o filtro é menor que o mês civil e início/fim no mesmo mês */
+  mostrar_faturamento_previsto: boolean;
+  faturamento_previsto: number;
+  faturamento_previsto_avulso: number;
+  faturamento_previsto_fixo: number;
+  previsto_dias_filtro: number;
+  previsto_dias_mes: number;
+  quantidade_comandas: number;
+  quantidade_pecas: number;
+  ticket_medio: number;
+  clientes_ativos: number;
+  volume: DashboardVolume[];
+  mix_servico: DashboardMix[];
+  ranking_pecas: DashboardRankingPeca[];
+  receita_por_tipo_cliente: DashboardReceitaTipo[];
+  clientes_por_pacote: DashboardClientePacote[];
+  clientes_risco: DashboardClienteRisco[];
+}

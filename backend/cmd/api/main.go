@@ -97,6 +97,7 @@ func main() {
 		r.Route("/api/financeiro", func(r chi.Router) {
 			r.Get("/comandas", financeiroH.Comandas)
 			r.Get("/pagantes", financeiroH.Pagantes)
+			r.Get("/dashboard", financeiroH.Dashboard)
 		})
 	})
 

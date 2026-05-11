@@ -5,6 +5,7 @@ import Layout from '@/components/Layout';
 import LoginPage from '@/pages/LoginPage';
 import ComandaPage from '@/pages/ComandaPage';
 import FinanceiroPage from '@/pages/FinanceiroPage';
+import DashboardPage from '@/pages/DashboardPage';
 import ClientesPage from '@/pages/ClientesPage';
 import PacotesPage from '@/pages/PacotesPage';
 import PecasPage from '@/pages/PecasPage';
@@ -62,6 +63,7 @@ export default function App() {
           <Route index element={<Navigate to="/comanda" replace />} />
           <Route path="comanda" element={<ComandaPage />} />
           <Route path="financeiro" element={<FinanceiroPage />} />
+          <Route path="gestao" element={<DashboardPage />} />
           <Route path="clientes" element={<ClientesPage />} />
           <Route path="pacotes" element={<PacotesPage />} />
           <Route path="pecas" element={<PecasPage />} />
