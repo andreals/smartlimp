@@ -103,6 +103,7 @@ export interface Impressao {
   total_pecas: number;
   total_valor: number;
   total_vencimento: number;
+  antecipado: 'S' | 'N';
   pontos: number;
   pontos_acumulados: number;
   pontos_utilizados: number;

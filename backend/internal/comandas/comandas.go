@@ -344,6 +344,7 @@ type ImpressaoOut struct {
 	TotalPecas        int             `json:"total_pecas"`
 	TotalValor        float64         `json:"total_valor"`
 	TotalVencimento   int             `json:"total_vencimento"`
+	Antecipado        string          `json:"antecipado"`
 	Pontos            int64           `json:"pontos"`
 	PontosAcumulados  int64           `json:"pontos_acumulados"`
 	PontosUtilizados  int64           `json:"pontos_utilizados"`
@@ -359,6 +360,8 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 			COALESCE(x3.nome, '') AS pacote,
 			x3.tipo AS tipo_pacote,
 			COALESCE(x3.preco, 0) AS valor_pacote,
+			COALESCE(x3.quantidade, 0) AS quantidade_pacote,
+			x2.antecipado,
 			x1.numero,
 			x2.tipo AS tipo_cliente,
 			TO_CHAR(x1.data, 'DD/MM/YYYY') AS data_comanda,
@@ -395,8 +398,10 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		cliente      string
 		pacote       string
 		tipoPac      string
-		vpacote      float64
-		numero       int64
+		vpacote          float64
+		quantidadePacote int
+		antecipado       string
+		numero           int64
 		tipoClienteR string
 		dataComanda  string
 		dataRow      time.Time
@@ -420,7 +425,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 	var linhas []impressaoLinha
 	for rows.Next() {
 		var ln impressaoLinha
-		if err := rows.Scan(&ln.cliente, &ln.pacote, &ln.tipoPac, &ln.vpacote, &ln.numero, &ln.tipoClienteR, &ln.dataComanda, &ln.dataRow,
+		if err := rows.Scan(&ln.cliente, &ln.pacote, &ln.tipoPac, &ln.vpacote, &ln.quantidadePacote, &ln.antecipado, &ln.numero, &ln.tipoClienteR, &ln.dataComanda, &ln.dataRow,
 			&ln.quantidade, &ln.tipo, &ln.valorPeca, &ln.descricao, &ln.entraPacote, &ln.idCli, &ln.pagamentoRow,
 			&ln.freqPag, &ln.diaVenc, &ln.logradouro, &ln.numCasa, &ln.bairro, &ln.cidade, &ln.telefone, &ln.celular); err != nil {
 			rows.Close()
@@ -446,6 +451,8 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 	totalValor := 0.0
 	totalPecas := 0
 	totalVencimento := 0
+	quantidadePacote := 0
+	clienteAntecipado := ""
 	desconto := 0.0
 	acrescimo := 0.0
 	idCliente := int64(0)
@@ -500,6 +507,8 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		idCliente = idCli
 		dataRowStr = dataRow.Format("2006-01-02")
 		valorPacote = vpacote
+		quantidadePacote = ln.quantidadePacote
+		clienteAntecipado = ln.antecipado
 		tipoPacote = tipoPac
 		tipoCliente = tipoClienteR
 		pagamento = pagamentoRow
@@ -507,29 +516,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		diaVencimento = diaVenc
 
 		if tipoCliente == "fixo" && primeiroLoop {
-			var dataInicio, dataFim string
-			if frequenciaPgmt == "mensal" {
-				dia := diaVencimento
-				if dia == "" {
-					dia = "01"
-				}
-				if len(dia) == 1 {
-					dia = "0" + dia
-				}
-				vencDate, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-")+fmt.Sprintf("%02s", dia))
-				if dataRow.Before(vencDate) {
-					dataInicio = dataRow.AddDate(0, -1, 0).Format("2006-01-") + fmt.Sprintf("%02s", dia)
-					di, _ := time.Parse("2006-01-02", dataInicio)
-					dataFim = di.AddDate(0, 1, -1).Format("2006-01-02")
-				} else {
-					dataInicio = dataRow.Format("2006-01-") + fmt.Sprintf("%02s", dia)
-					di, _ := time.Parse("2006-01-02", dataInicio)
-					dataFim = di.AddDate(0, 1, -1).Format("2006-01-02")
-				}
-			} else {
-				dataInicio = dataRow.Format("2006-01-01")
-				dataFim = lastDayOfMonth(dataRow)
-			}
+			dataInicio, dataFim := comandaBillingPeriod(dataRow, frequenciaPgmt, diaVencimento, clienteAntecipado)
 
 			if pagamento == "S" {
 				var foraPacote, adAcrs, adDesc sql.NullFloat64
@@ -561,15 +548,26 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 			}
 
 			var totalVenc sql.NullInt64
-			_ = h.db.QueryRow(`
-				SELECT SUM(x2.quantidade) FROM comandas x1
-				JOIN comanda_pecas x2 ON x1.id = x2.id_comanda
-				JOIN pecas x3 ON x2.id_peca = x3.id
-				JOIN clientes x4 ON x1.id_cliente = x4.id
-				JOIN pacotes x5 ON x4.id_pacote = x5.id
-				WHERE x1.id_cliente = $1 AND x1.data BETWEEN $2 AND $3 AND x3.entra_pacote = 'S' AND x5.tipo = x2.tipo`,
-				idCliente, dataInicio, dataFim,
-			).Scan(&totalVenc)
+			if clienteAntecipado == "S" {
+				// Antecipado: mês civil da comanda; todas as peças que entram no pacote (sem exigir tipo = pacote).
+				_ = h.db.QueryRow(`
+					SELECT COALESCE(SUM(x2.quantidade), 0) FROM comandas x1
+					JOIN comanda_pecas x2 ON x1.id = x2.id_comanda
+					JOIN pecas x3 ON x2.id_peca = x3.id
+					WHERE x1.id_cliente = $1 AND x1.data BETWEEN $2 AND $3 AND x3.entra_pacote = 'S'`,
+					idCliente, dataInicio, dataFim,
+				).Scan(&totalVenc)
+			} else {
+				_ = h.db.QueryRow(`
+					SELECT COALESCE(SUM(x2.quantidade), 0) FROM comandas x1
+					JOIN comanda_pecas x2 ON x1.id = x2.id_comanda
+					JOIN pecas x3 ON x2.id_peca = x3.id
+					JOIN clientes x4 ON x1.id_cliente = x4.id
+					JOIN pacotes x5 ON x4.id_pacote = x5.id
+					WHERE x1.id_cliente = $1 AND x1.data BETWEEN $2 AND $3 AND x3.entra_pacote = 'S' AND x5.tipo = x2.tipo`,
+					idCliente, dataInicio, dataFim,
+				).Scan(&totalVenc)
+			}
 			totalVencimento = int(totalVenc.Int64)
 
 			primeiroLoop = false
@@ -652,6 +650,14 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 	out.Acrescimo = acrescimo
 	out.Saldo = saldo.Float64
 	out.TotalPecas = totalPecas
+	if clienteAntecipado == "S" && quantidadePacote > 0 {
+		restante := quantidadePacote - totalVencimento
+		if restante < 0 {
+			restante = 0
+		}
+		totalVencimento = restante
+	}
+	out.Antecipado = clienteAntecipado
 	out.TotalVencimento = totalVencimento
 	out.TotalValor = totalValor
 	out.PontosAcumulados = pa.Int64
@@ -719,4 +725,47 @@ func lastDayOfMonth(t time.Time) string {
 	first := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
 	last := first.AddDate(0, 1, -1)
 	return last.Format("2006-01-02")
+}
+
+// comandaBillingPeriod define o intervalo (inclusive) para somar peças do pacote na impressão.
+// Antecipado: sempre mês civil da data da comanda (acumula todas as comandas do mês).
+// Demais fixos: ciclo pela frequência (mensal usa dia de vencimento relativo à data da comanda, não "hoje").
+func comandaBillingPeriod(dataRow time.Time, frequencia, diaVencimento, antecipado string) (inicio, fim string) {
+	loc := dataRow.Location()
+	if antecipado == "S" {
+		first := time.Date(dataRow.Year(), dataRow.Month(), 1, 0, 0, 0, 0, loc)
+		return first.Format("2006-01-02"), first.AddDate(0, 1, -1).Format("2006-01-02")
+	}
+	if strings.TrimSpace(strings.ToLower(frequencia)) != "mensal" {
+		first := time.Date(dataRow.Year(), dataRow.Month(), 1, 0, 0, 0, 0, loc)
+		return first.Format("2006-01-02"), lastDayOfMonth(dataRow)
+	}
+	dueDay := 1
+	if d := strings.TrimSpace(diaVencimento); d != "" {
+		if n, err := strconv.Atoi(d); err == nil && n >= 1 && n <= 31 {
+			dueDay = n
+		}
+	}
+	y, m, _ := dataRow.Date()
+	dim := daysInMonth(y, m)
+	if dueDay > dim {
+		dueDay = dim
+	}
+	venc := time.Date(y, m, dueDay, 0, 0, 0, 0, loc)
+	if dataRow.Before(venc) {
+		prev := venc.AddDate(0, -1, 0)
+		py, pm, _ := prev.Date()
+		pdim := daysInMonth(py, pm)
+		pd := dueDay
+		if pd > pdim {
+			pd = pdim
+		}
+		inicioT := time.Date(py, pm, pd, 0, 0, 0, 0, loc)
+		return inicioT.Format("2006-01-02"), venc.AddDate(0, 0, -1).Format("2006-01-02")
+	}
+	return venc.Format("2006-01-02"), venc.AddDate(0, 1, -1).Format("2006-01-02")
+}
+
+func daysInMonth(year int, month time.Month) int {
+	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.Local).Day()
 }
