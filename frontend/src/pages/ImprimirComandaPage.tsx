@@ -137,8 +137,10 @@ function Via({ data, label }: { data: Impressao; label: string }) {
             <th className="border border-slate-300 bg-slate-100 px-0.5 text-center font-bold tabular-nums">
               {data.total_pecas}
             </th>
-            <th className="border border-slate-300 bg-slate-100 px-1 text-right">Valor:</th>
-            <th className="border border-slate-300 bg-slate-100 px-0.5 text-right text-[11px] font-semibold tabular-nums leading-tight">
+            <th className="border border-slate-300 bg-slate-100 px-1 text-right text-sm font-bold">
+              Valor:
+            </th>
+            <th className="border border-slate-300 bg-slate-100 px-0.5 text-right text-lg font-bold tabular-nums leading-tight print:text-xl">
               {formatBRL(data.total_valor)}
             </th>
           </tr>
