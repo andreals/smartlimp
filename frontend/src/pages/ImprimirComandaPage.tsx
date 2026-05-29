@@ -17,6 +17,8 @@ const servicoAbrev: Record<string, string> = {
 };
 
 function Via({ data, label }: { data: Impressao; label: string }) {
+  const phones = [data.telefone?.trim(), data.celular?.trim()].filter(Boolean);
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col border border-slate-300 p-3 text-[12px] leading-snug print:break-inside-avoid print:text-[11.5px]">
       <header className="mb-2 flex items-center justify-between border-b border-dashed border-slate-300 pb-2">
@@ -24,7 +26,7 @@ function Via({ data, label }: { data: Impressao; label: string }) {
           <img
             src="/smart_limp.png"
             alt="Smart Limp"
-            className="row-span-2 h-[2.35rem] w-auto max-w-[5.5rem] self-center object-contain object-left print:h-[2.25rem] print:max-w-[5rem]"
+            className="row-span-2 h-[3.6rem] w-auto max-w-[8rem] self-center object-contain object-left print:h-[3.5rem] print:max-w-[7.5rem]"
           />
           <div className="text-base font-bold leading-tight">Smart Limp</div>
           <div className="leading-snug">
@@ -42,12 +44,14 @@ function Via({ data, label }: { data: Impressao; label: string }) {
         <div className="text-xl font-bold uppercase leading-tight tracking-tight text-slate-900 sm:text-2xl">
           {data.cliente}
         </div>
-        <div className="mt-1 text-[11px] text-slate-600">
+        <div className="mt-1 text-[12.5px] font-bold text-slate-700">
           {data.logradouro}, {data.numero_casa} • {data.bairro} • {data.cidade}
         </div>
-        <div className="text-[11px] text-slate-600">
-          Tel: {data.telefone} {data.celular ? `/ ${data.celular}` : ''}
-        </div>
+        {phones.length > 0 && (
+          <div className="text-[11px] text-slate-600">
+            Tel: {phones.join(' / ')}
+          </div>
+        )}
       </div>
 
       <table className="mb-2 w-full border border-slate-300">
@@ -62,7 +66,7 @@ function Via({ data, label }: { data: Impressao; label: string }) {
                 <th className="border border-slate-300 bg-slate-100 px-1 text-left">
                   {data.antecipado === 'S' ? 'Restante Pacote' : 'Total Pacote'}
                 </th>
-                <td className="border border-slate-300 px-1">{data.total_vencimento}</td>
+                <td className="border border-slate-300 px-1 font-bold">{data.total_vencimento}</td>
               </>
             )}
           </tr>
