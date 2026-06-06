@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { api, extractError } from '@/lib/api';
 import {
@@ -50,6 +50,7 @@ export default function ComandaPage() {
     }
   });
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(itens));
@@ -165,10 +166,12 @@ export default function ComandaPage() {
   }, [itens, desconto, acrescimo, pontosUtilizados, tipoCliente, saldoCliente]);
 
   const finalizar = async () => {
+    if (submittingRef.current) return;
     if (!idCliente) return toast.error('Selecione um cliente');
     if (!isValidBRDate(dataComanda)) return toast.error('Data inválida');
     if (itens.length === 0) return toast.error('Adicione ao menos uma peça');
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const { data } = await api.post<{ id: number; numero: number }>('/comandas', {
@@ -197,6 +200,7 @@ export default function ComandaPage() {
     } catch (err) {
       toast.error(extractError(err, 'Erro ao salvar comanda'));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

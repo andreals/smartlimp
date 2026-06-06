@@ -65,6 +65,22 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
+	if _, err := tx.Exec(`SELECT pg_advisory_xact_lock($1)`, p.IDCliente); err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao reservar cliente", err)
+		return
+	}
+
+	totalPecas := totalPecasComanda(p.PecasComanda)
+	dup, err := hasDuplicateRecentComanda(tx, p.IDCliente, totalPecas, 5*time.Minute)
+	if err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao verificar duplicidade", err)
+		return
+	}
+	if dup {
+		httpx.Error(w, r, http.StatusConflict, "comanda duplicada: já existe uma comanda igual para este cliente nos últimos 5 minutos")
+		return
+	}
+
 	var (
 		clienteNome  string
 		clienteEmail sql.NullString
@@ -699,6 +715,40 @@ func (h *Handler) Pagamento(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func totalPecasComanda(pecas []pecaPayload) int {
+	total := 0
+	for _, pe := range pecas {
+		total += pe.QuantidadePeca
+	}
+	return total
+}
+
+func hasDuplicateRecentComanda(tx *sql.Tx, idCliente int64, totalPecas int, window time.Duration) (bool, error) {
+	cutoff := time.Now().Add(-window).Format("2006-01-02 15:04:05")
+	var exists int
+	err := tx.QueryRow(`
+		SELECT 1
+		FROM comandas c
+		JOIN (
+			SELECT id_comanda, SUM(quantidade)::int AS total_pecas
+			FROM comanda_pecas
+			GROUP BY id_comanda
+		) cp ON cp.id_comanda = c.id
+		WHERE c.id_cliente = $1
+		  AND c.data_cadastro >= $2
+		  AND cp.total_pecas = $3
+		LIMIT 1`,
+		idCliente, cutoff, totalPecas,
+	).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func parseBRDate(s string) (time.Time, error) {
