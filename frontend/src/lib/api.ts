@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { handleSessionExpired, isTokenExpired, TOKEN_KEY } from '@/lib/auth-session';
 
 const baseURL = import.meta.env.VITE_API_URL ?? '';
 
@@ -7,11 +8,16 @@ export const api = axios.create({
   timeout: 30000,
 });
 
+const SESSION_EXPIRED_CANCEL = 'session-expired';
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('smartlimp:token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return config;
+  if (isTokenExpired(token)) {
+    handleSessionExpired();
+    return Promise.reject(new axios.CanceledError(SESSION_EXPIRED_CANCEL));
   }
+  config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
@@ -19,20 +25,15 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('smartlimp:token');
-      localStorage.removeItem('smartlimp:usuario');
-      const path = window.location.pathname;
-      const isLogin = path === '/login';
-      const isPrint = path.includes('/imprimir');
-      if (!isLogin && !isPrint) {
-        window.location.href = '/login';
-      }
+      handleSessionExpired();
+      return Promise.reject(new axios.CanceledError(SESSION_EXPIRED_CANCEL));
     }
     return Promise.reject(error);
   },
 );
 
 export function extractError(err: unknown, fallback: string): string {
+  if (axios.isCancel(err)) return '';
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { error?: string } | undefined;
     if (data?.error) return data.error;
