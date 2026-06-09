@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -191,6 +192,24 @@ type savePayload struct {
 	Status              string `json:"status"`
 }
 
+func nullablePacoteID(v *int64) sql.NullInt64 {
+	if v == nil || *v <= 0 {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: *v, Valid: true}
+}
+
+func diaVencimentoArg(s string) any {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	if n, err := strconv.Atoi(s); err == nil {
+		return n
+	}
+	return s
+}
+
 func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	user, _ := middleware.UserFromContext(r.Context())
 
@@ -210,13 +229,16 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	idPacote := nullablePacoteID(p.IDPacote)
+	diaVenc := diaVencimentoArg(p.DiaVencimento)
+
 	if p.ID != nil && *p.ID > 0 {
 		_, err := h.db.Exec(
 			`UPDATE clientes SET nome=$1, id_pacote=$2, telefone=$3, celular=$4, email=$5, tipo=$6, antecipado=$7,
 			 frequencia_pagamento=$8, dia_vencimento=$9, cep=$10, numero=$11, logradouro=$12, bairro=$13, cidade=$14,
 			 uf=$15, status=$16 WHERE id=$17`,
-			p.Nome, p.IDPacote, p.Telefone, p.Celular, p.Email, p.Tipo, p.Antecipado,
-			p.FrequenciaPagamento, p.DiaVencimento, p.CEP, p.Numero, p.Logradouro,
+			p.Nome, idPacote, p.Telefone, p.Celular, p.Email, p.Tipo, p.Antecipado,
+			p.FrequenciaPagamento, diaVenc, p.CEP, p.Numero, p.Logradouro,
 			p.Bairro, p.Cidade, p.UF, p.Status, *p.ID,
 		)
 		if err != nil {
@@ -233,8 +255,8 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		 frequencia_pagamento, dia_vencimento, cep, numero, logradouro, bairro, cidade, uf, status)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`,
 		user.UserID, time.Now().Format("2006-01-02 15:04:05"),
-		p.Nome, p.IDPacote, p.Telefone, p.Celular, p.Email, p.Tipo, p.Antecipado,
-		p.FrequenciaPagamento, p.DiaVencimento, p.CEP, p.Numero, p.Logradouro,
+		p.Nome, idPacote, p.Telefone, p.Celular, p.Email, p.Tipo, p.Antecipado,
+		p.FrequenciaPagamento, diaVenc, p.CEP, p.Numero, p.Logradouro,
 		p.Bairro, p.Cidade, p.UF, p.Status,
 	).Scan(&newID)
 	if err != nil {

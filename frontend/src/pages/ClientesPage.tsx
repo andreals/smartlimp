@@ -226,7 +226,7 @@ export default function ClientesPage() {
         tipo: form.tipo,
         antecipado: form.antecipado,
         frequencia_pagamento: form.frequencia_pagamento,
-        dia_vencimento: form.dia_vencimento,
+        dia_vencimento: form.dia_vencimento.trim() || null,
         cep: unmask(form.cep),
         numero: form.numero,
         logradouro: form.logradouro,
