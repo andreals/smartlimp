@@ -58,3 +58,36 @@ func getenv(k, def string) string {
 	}
 	return v
 }
+
+// ForTests monta configuração para testes de integração / E2E.
+func ForTests() *Config {
+	dbURL := os.Getenv("TEST_DATABASE_URL")
+	if dbURL == "" {
+		dbURL = os.Getenv("DATABASE_URL")
+	}
+	if dbURL == "" {
+		dbURL = "postgresql://smartlimp:test@127.0.0.1:54329/smartlimp_test?sslmode=disable"
+	}
+
+	ttl, err := strconv.Atoi(getenv("JWT_TTL_HOURS", "12"))
+	if err != nil {
+		ttl = 12
+	}
+
+	rawOrigins := getenv("CORS_ORIGINS", "http://127.0.0.1:5173")
+	origins := []string{}
+	for _, o := range strings.Split(rawOrigins, ",") {
+		if v := strings.TrimSpace(o); v != "" {
+			origins = append(origins, v)
+		}
+	}
+
+	return &Config{
+		Port:        getenv("PORT", "8080"),
+		Env:         "test",
+		DatabaseURL: dbURL,
+		JWTSecret:   getenv("JWT_SECRET", "test-secret"),
+		JWTTTLHours: ttl,
+		CORSOrigins: origins,
+	}
+}

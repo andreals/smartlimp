@@ -4,12 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/forint/smartlimp-backend/internal/config"
+	"github.com/forint/smartlimp-backend/internal/migrate"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -27,28 +25,14 @@ func main() {
 	}
 	log.Printf("conectado em %s", redact(cfg.DatabaseURL))
 
-	dir := "migrations"
-	if v := os.Getenv("MIGRATIONS_DIR"); v != "" {
-		dir = v
+	dir := migrate.Dir()
+	if err := migrate.Apply(func(sql string) error {
+		_, err := db.Exec(sql)
+		return err
+	}, dir); err != nil {
+		log.Fatalf("migrations: %v", err)
 	}
-
-	files, err := filepath.Glob(filepath.Join(dir, "*.sql"))
-	if err != nil {
-		log.Fatalf("listar migrations: %v", err)
-	}
-	sort.Strings(files)
-
-	for _, f := range files {
-		log.Printf("aplicando %s ...", filepath.Base(f))
-		b, err := os.ReadFile(f)
-		if err != nil {
-			log.Fatalf("ler %s: %v", f, err)
-		}
-		if _, err := db.Exec(string(b)); err != nil {
-			log.Fatalf("aplicar %s: %v", f, err)
-		}
-	}
-	log.Printf("%d migration(s) aplicadas com sucesso", len(files))
+	log.Printf("migrations aplicadas em %s", dir)
 }
 
 func redact(url string) string {
