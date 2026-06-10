@@ -21,7 +21,7 @@ func TestToOut(t *testing.T) {
 		Email:               sql.NullString{String: "maria@exemplo.com", Valid: true},
 		Tipo:                "fixo",
 		FrequenciaPagamento: sql.NullString{String: "mensal", Valid: true},
-		DiaVencimento:       sql.NullString{String: "10", Valid: true},
+		DiaVencimento:       sql.NullInt64{Int64: 10, Valid: true},
 		Antecipado:          "N",
 		Status:              "ativo",
 		IDPacote:            idPacote,
@@ -67,25 +67,6 @@ func TestNullablePacoteID(t *testing.T) {
 				t.Fatalf("nullablePacoteID(%v) = %+v, want valid=%v int64=%d", tc.in, got, tc.want, tc.val)
 			}
 		})
-	}
-}
-
-func TestDiaVencimentoArg(t *testing.T) {
-	cases := []struct {
-		in   string
-		want any
-	}{
-		{"", nil},
-		{"  ", nil},
-		{"15", 15},
-		{" 20 ", 20},
-		{"ultimo", "ultimo"},
-	}
-	for _, tc := range cases {
-		got := diaVencimentoArg(tc.in)
-		if got != tc.want {
-			t.Errorf("diaVencimentoArg(%q) = %#v, want %#v", tc.in, got, tc.want)
-		}
 	}
 }
 
