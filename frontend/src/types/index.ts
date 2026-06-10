@@ -38,7 +38,7 @@ export interface Cliente {
   email: string;
   tipo: 'avulso' | 'fixo';
   frequencia_pagamento: 'diario' | 'semanal' | 'dezenal' | 'quinzenal' | 'mensal' | '';
-  dia_vencimento: string;
+  dia_vencimento: number;
   antecipado: 'S' | 'N';
   status: 'ativo' | 'inativo';
   id_pacote: number | null;
@@ -94,7 +94,7 @@ export interface Impressao {
   telefone: string;
   celular: string;
   frequencia_pagamento: string;
-  dia_vencimento: string;
+  dia_vencimento: number;
   pecas: ImpressaoPeca[];
   sub_total: number;
   desconto: number;

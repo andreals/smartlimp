@@ -351,7 +351,7 @@ type ImpressaoOut struct {
 	Telefone          string          `json:"telefone"`
 	Celular           string          `json:"celular"`
 	FrequenciaPgmt    string          `json:"frequencia_pagamento"`
-	DiaVencimento     string          `json:"dia_vencimento"`
+	DiaVencimento     int64          `json:"dia_vencimento"`
 	Pecas             []ImpressaoPeca `json:"pecas"`
 	SubTotal          float64         `json:"sub_total"`
 	Desconto          float64         `json:"desconto"`
@@ -374,7 +374,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		SELECT
 			UPPER(x2.nome) AS cliente,
 			COALESCE(x3.nome, '') AS pacote,
-			COALESCE(x3.tipo, '') AS tipo_pacote,
+			x3.tipo AS tipo_pacote,
 			COALESCE(x3.preco, 0) AS valor_pacote,
 			COALESCE(x3.quantidade, 0) AS quantidade_pacote,
 			x2.antecipado,
@@ -389,8 +389,8 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 			x5.entra_pacote,
 			x1.id_cliente,
 			x1.pagamento,
-			COALESCE(x2.frequencia_pagamento, '') AS frequencia_pagamento,
-			COALESCE(x2.dia_vencimento, '') AS dia_vencimento,
+			x2.frequencia_pagamento AS frequencia_pagamento,
+			x2.dia_vencimento AS dia_vencimento,
 			COALESCE(x2.logradouro, '') AS logradouro,
 			COALESCE(x2.numero, '') AS numCasa,
 			COALESCE(x2.bairro, '') AS bairro,
@@ -429,7 +429,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		idCli        int64
 		pagamentoRow string
 		freqPag      string
-		diaVenc      string
+		diaVenc      int64
 		logradouro   string
 		numCasa      string
 		bairro       string
@@ -478,7 +478,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 	tipoCliente := ""
 	pagamento := ""
 	frequenciaPgmt := ""
-	diaVencimento := ""
+	diaVencimento := int64(0)
 
 	for _, ln := range linhas {
 		cliente := ln.cliente
@@ -780,7 +780,7 @@ func lastDayOfMonth(t time.Time) string {
 // comandaBillingPeriod define o intervalo (inclusive) para somar peças do pacote na impressão.
 // Antecipado: sempre mês civil da data da comanda (acumula todas as comandas do mês).
 // Demais fixos: ciclo pela frequência (mensal usa dia de vencimento relativo à data da comanda, não "hoje").
-func comandaBillingPeriod(dataRow time.Time, frequencia, diaVencimento, antecipado string) (inicio, fim string) {
+func comandaBillingPeriod(dataRow time.Time, frequencia string, diaVencimento int64, antecipado string) (inicio, fim string) {
 	loc := dataRow.Location()
 	if antecipado == "S" {
 		first := time.Date(dataRow.Year(), dataRow.Month(), 1, 0, 0, 0, 0, loc)
@@ -791,10 +791,8 @@ func comandaBillingPeriod(dataRow time.Time, frequencia, diaVencimento, antecipa
 		return first.Format("2006-01-02"), lastDayOfMonth(dataRow)
 	}
 	dueDay := 1
-	if d := strings.TrimSpace(diaVencimento); d != "" {
-		if n, err := strconv.Atoi(d); err == nil && n >= 1 && n <= 31 {
-			dueDay = n
-		}
+	if diaVencimento >= 1 && diaVencimento <= 31 {
+		dueDay = int(diaVencimento)
 	}
 	y, m, _ := dataRow.Date()
 	dim := daysInMonth(y, m)

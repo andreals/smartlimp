@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -27,7 +26,7 @@ type Cliente struct {
 	Email               sql.NullString  `json:"-"`
 	Tipo                string          `json:"tipo"`
 	FrequenciaPagamento sql.NullString  `json:"-"`
-	DiaVencimento       sql.NullString  `json:"-"`
+	DiaVencimento       sql.NullInt64   `json:"-"`
 	Antecipado          string          `json:"antecipado"`
 	Status              string          `json:"status"`
 	IDPacote            sql.NullInt64   `json:"-"`
@@ -51,7 +50,7 @@ type ClienteOut struct {
 	Email               string   `json:"email"`
 	Tipo                string   `json:"tipo"`
 	FrequenciaPagamento string   `json:"frequencia_pagamento"`
-	DiaVencimento       string   `json:"dia_vencimento"`
+	DiaVencimento       int64    `json:"dia_vencimento"`
 	Antecipado          string   `json:"antecipado"`
 	Status              string   `json:"status"`
 	IDPacote            *int64   `json:"id_pacote"`
@@ -76,7 +75,7 @@ func toOut(c Cliente) ClienteOut {
 		Email:               c.Email.String,
 		Tipo:                c.Tipo,
 		FrequenciaPagamento: c.FrequenciaPagamento.String,
-		DiaVencimento:       c.DiaVencimento.String,
+		DiaVencimento:       c.DiaVencimento.Int64,
 		Antecipado:          c.Antecipado,
 		Status:              c.Status,
 		Pacote:              c.Pacote.String,
@@ -182,7 +181,7 @@ type savePayload struct {
 	Tipo                string `json:"tipo"`
 	Antecipado          string `json:"antecipado"`
 	FrequenciaPagamento string `json:"frequencia_pagamento"`
-	DiaVencimento       string `json:"dia_vencimento"`
+	DiaVencimento       int64  `json:"dia_vencimento"`
 	CEP                 string `json:"cep"`
 	Numero              string `json:"numero"`
 	Logradouro          string `json:"logradouro"`
@@ -197,17 +196,6 @@ func nullablePacoteID(v *int64) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: *v, Valid: true}
-}
-
-func diaVencimentoArg(s string) any {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return nil
-	}
-	if n, err := strconv.Atoi(s); err == nil {
-		return n
-	}
-	return s
 }
 
 func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
@@ -230,7 +218,6 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idPacote := nullablePacoteID(p.IDPacote)
-	diaVenc := diaVencimentoArg(p.DiaVencimento)
 
 	if p.ID != nil && *p.ID > 0 {
 		_, err := h.db.Exec(
@@ -238,7 +225,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 			 frequencia_pagamento=$8, dia_vencimento=$9, cep=$10, numero=$11, logradouro=$12, bairro=$13, cidade=$14,
 			 uf=$15, status=$16 WHERE id=$17`,
 			p.Nome, idPacote, p.Telefone, p.Celular, p.Email, p.Tipo, p.Antecipado,
-			p.FrequenciaPagamento, diaVenc, p.CEP, p.Numero, p.Logradouro,
+			p.FrequenciaPagamento, p.DiaVencimento, p.CEP, p.Numero, p.Logradouro,
 			p.Bairro, p.Cidade, p.UF, p.Status, *p.ID,
 		)
 		if err != nil {
@@ -256,7 +243,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`,
 		user.UserID, time.Now().Format("2006-01-02 15:04:05"),
 		p.Nome, idPacote, p.Telefone, p.Celular, p.Email, p.Tipo, p.Antecipado,
-		p.FrequenciaPagamento, diaVenc, p.CEP, p.Numero, p.Logradouro,
+		p.FrequenciaPagamento, p.DiaVencimento, p.CEP, p.Numero, p.Logradouro,
 		p.Bairro, p.Cidade, p.UF, p.Status,
 	).Scan(&newID)
 	if err != nil {

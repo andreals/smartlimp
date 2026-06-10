@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     antecipado               CHAR(1)     NOT NULL DEFAULT 'N'
                              CHECK (antecipado IN ('S','N')),
     frequencia_pagamento     VARCHAR(20),                       -- 'mensal' | 'avulso' | etc.
-    dia_vencimento           VARCHAR(2),
+    dia_vencimento           INTEGER,
     cep                      VARCHAR(10),
     numero                   VARCHAR(20),
     logradouro               VARCHAR(180),
