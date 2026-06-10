@@ -226,7 +226,7 @@ export default function ClientesPage() {
         tipo: form.tipo,
         antecipado: form.antecipado,
         frequencia_pagamento: form.frequencia_pagamento,
-        dia_vencimento: form.dia_vencimento.trim() || 0,
+        dia_vencimento: form.dia_vencimento,
         cep: unmask(form.cep),
         numero: form.numero,
         logradouro: form.logradouro,
@@ -353,11 +353,21 @@ export default function ClientesPage() {
                 />
               </div>
               <div>
-                <label>Dia Vencimento</label>
+                <label htmlFor="cliente-dia-vencimento">Dia Vencimento</label>
                 <input
+                  id="cliente-dia-vencimento"
+                  type="number"
+                  min={1}
+                  max={31}
                   className="input mt-1"
-                  value={form.dia_vencimento}
-                  onChange={(e) => setForm({ ...form, dia_vencimento: e.target.value })}
+                  value={form.dia_vencimento || ''}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setForm({
+                      ...form,
+                      dia_vencimento: raw === '' ? 0 : Number(raw),
+                    });
+                  }}
                 />
               </div>
             </div>
