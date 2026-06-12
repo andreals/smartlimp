@@ -206,7 +206,7 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, http.StatusBadRequest, "payload inválido")
 		return
 	}
-	if len(strings.TrimSpace(p.Nome)) < 5 ||
+	if len(strings.TrimSpace(p.Nome)) < 3 ||
 		len(strings.TrimSpace(p.CEP)) != 8 ||
 		strings.TrimSpace(p.Numero) == "" ||
 		strings.TrimSpace(p.Logradouro) == "" ||

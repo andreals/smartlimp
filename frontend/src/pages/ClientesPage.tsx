@@ -357,10 +357,10 @@ export default function ClientesPage() {
                 <input
                   id="cliente-dia-vencimento"
                   type="number"
-                  min={1}
+                  min={0}
                   max={31}
                   className="input mt-1"
-                  value={form.dia_vencimento || ''}
+                  value={form.dia_vencimento}
                   onChange={(e) => {
                     const raw = e.target.value;
                     setForm({
