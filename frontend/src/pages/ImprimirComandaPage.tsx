@@ -18,7 +18,7 @@ const servicoAbrev: Record<string, string> = {
   tingir: 'T',
 };
 
-function Via({ data }: { data: Impressao }) {
+function Via({ data, observacao }: { data: Impressao; observacao: string }) {
   const phones = [data.telefone?.trim(), data.celular?.trim()].filter(Boolean);
 
   return (
@@ -161,6 +161,20 @@ function Via({ data }: { data: Impressao }) {
           </tr>
         </tfoot>
       </table>
+
+      {observacao && (
+        <div className="mt-3 flex gap-2 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2">
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-rose-600">
+              Observação
+            </div>
+            <div className="text-[12px] font-bold leading-snug text-rose-800 whitespace-pre-wrap">{observacao}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -169,6 +183,7 @@ export default function ImprimirComandaPage() {
   const { id } = useParams();
   const [data, setData] = useState<Impressao | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [observacao, setObservacao] = useState('');
 
   useEffect(() => {
     if (!id) {
@@ -279,13 +294,27 @@ export default function ImprimirComandaPage() {
               Compartilhar no WhatsApp
             </button>
           </div>
+
+          <div className="mt-4">
+            <label htmlFor="observacao" className="mb-1 block">
+              Observação
+            </label>
+            <textarea
+              id="observacao"
+              className="input resize-none"
+              rows={3}
+              placeholder="Ex: Camiseta azul não foi pois tinha uma mancha..."
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+            />
+          </div>
         </div>
 
         <div
           id="comanda-via-unica"
           className="overflow-hidden rounded-2xl shadow-card print:rounded-none print:shadow-none"
         >
-          <Via data={data} />
+          <Via data={data} observacao={observacao} />
         </div>
       </div>
     </div>

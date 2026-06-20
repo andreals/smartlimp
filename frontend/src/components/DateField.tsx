@@ -63,10 +63,15 @@ export default function DateField({ id, label, value, onChange, required }: Prop
           type="text"
           inputMode="numeric"
           autoComplete="off"
-          className="input w-full pr-[3.25rem]"
+          className="input w-full cursor-pointer pr-[3.25rem]"
           placeholder="dd/mm/aaaa"
           value={value}
           onChange={(e) => onChange(maskDateBR(e.target.value))}
+          onClick={() => {
+            const el = pickerRef.current;
+            if (!el) return;
+            try { el.showPicker?.(); } catch { el.click(); }
+          }}
           required={required}
         />
 

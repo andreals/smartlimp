@@ -15,11 +15,26 @@ import EmptyState from '@/components/EmptyState';
 import DateField from '@/components/DateField';
 import AutocompleteSelect from '@/components/AutocompleteSelect';
 
+function toddmmyyyy(d: Date): string {
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+function inicioSemanaAtual(): string {
+  const hoje = new Date();
+  const dow = hoje.getDay();
+  const seg = new Date(hoje);
+  seg.setDate(hoje.getDate() - (dow === 0 ? 6 : dow - 1));
+  return toddmmyyyy(seg);
+}
+
+const INICIO_SEMANA = inicioSemanaAtual();
+const HOJE = toddmmyyyy(new Date());
+
 export default function FinanceiroPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [idCliente, setIdCliente] = useState('');
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
+  const [dataInicio, setDataInicio] = useState(INICIO_SEMANA);
+  const [dataFim, setDataFim] = useState(HOJE);
   const [diasPagamento, setDiasPagamento] = useState('30');
 
   const [comandas, setComandas] = useState<ComandaResumo[]>([]);
@@ -37,13 +52,24 @@ export default function FinanceiroPage() {
   useEffect(() => {
     api
       .get<Cliente[]>('/clientes')
-      .then(({ data }) => setClientes(data))
+      .then(({ data }) => {
+        setClientes(data);
+        // Auto-filtrar com os valores iniciais ao carregar a página
+        setLoadingComandas(true);
+        api
+          .get<ComandaResumo[]>('/financeiro/comandas', {
+            params: { id_cliente: '', data_inicio: INICIO_SEMANA, data_fim: HOJE },
+          })
+          .then(({ data: d }) => setComandas(d))
+          .catch((err) => toast.error(extractError(err, 'Erro ao consultar comandas')))
+          .finally(() => setLoadingComandas(false));
+      })
       .catch((err) => toast.error(extractError(err, 'Erro ao carregar clientes')));
   }, []);
 
   const filtrar = async () => {
-    if (!idCliente || !dataInicio || !dataFim) {
-      toast.error('Selecione cliente e datas');
+    if (!dataInicio || !dataFim) {
+      toast.error('Informe as datas');
       return;
     }
     if (!isValidBRDate(dataInicio) || !isValidBRDate(dataFim)) {
@@ -109,12 +135,14 @@ export default function FinanceiroPage() {
   const totalValor = comandas.reduce((acc, c) => acc + Number(c.valor || 0), 0);
 
   const clienteOptions = useMemo(
-    () =>
-      clientes.map((c) => ({
+    () => [
+      { value: '', label: 'Todos os clientes' },
+      ...clientes.map((c) => ({
         value: String(c.id),
         label: c.nome,
         meta: formatClienteAutocompleteMeta(c),
       })),
+    ],
     [clientes],
   );
 

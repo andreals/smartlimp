@@ -42,22 +42,31 @@ func (h *Handler) Comandas(w http.ResponseWriter, r *http.Request) {
 	dataInicio, _ := parseBRDate(strings.TrimSpace(q.Get("data_inicio")))
 	dataFim, _ := parseBRDate(strings.TrimSpace(q.Get("data_fim")))
 
-	if idCliente == "" || dataInicio == "" || dataFim == "" {
+	if dataInicio == "" || dataFim == "" {
 		httpx.JSON(w, http.StatusOK, []ComandaResumo{})
 		return
 	}
 
-	rows, err := h.db.Query(`
+	query := `
 		SELECT x1.id, x3.nome, x1.numero, x1.id_cliente, x1.efetuou_pagamento,
 		       TO_CHAR(x1.data, 'DD/MM/YYYY') AS data,
 		       SUM(x2.valor_peca*x2.quantidade) AS valor, SUM(x2.quantidade) AS quantidade
 		FROM comandas x1
 		JOIN comanda_pecas x2 ON x1.id = x2.id_comanda
 		JOIN clientes x3 ON x3.id = x1.id_cliente
-		WHERE x3.id = $1 AND x1.data BETWEEN $2 AND $3
-		GROUP BY x1.id, x3.nome, x1.numero, x1.id_cliente, x1.efetuou_pagamento, x1.data`,
-		idCliente, dataInicio, dataFim,
-	)
+		WHERE x1.data BETWEEN $1 AND $2`
+	args := []any{dataInicio, dataFim}
+	if idCliente != "" {
+		query += ` AND x3.id = $3`
+		args = append(args, idCliente)
+	}
+	if idCliente == "" {
+		query += ` GROUP BY x1.id, x3.nome, x1.numero, x1.id_cliente, x1.efetuou_pagamento, x1.data ORDER BY x3.nome, x1.data DESC`
+	} else {
+		query += ` GROUP BY x1.id, x3.nome, x1.numero, x1.id_cliente, x1.efetuou_pagamento, x1.data ORDER BY x1.data DESC`
+	}
+
+	rows, err := h.db.Query(query, args...)
 	if err != nil {
 		httpx.Error(w, r, http.StatusInternalServerError, "erro ao consultar comandas", err)
 		return
