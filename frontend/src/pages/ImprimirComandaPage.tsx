@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import html2canvas from 'html2canvas';
 import { api, extractError } from '@/lib/api';
 import { formatBRL } from '@/lib/format';
 import type { Impressao } from '@/types';
@@ -16,12 +18,12 @@ const servicoAbrev: Record<string, string> = {
   tingir: 'T',
 };
 
-function Via({ data, label }: { data: Impressao; label: string }) {
+function Via({ data }: { data: Impressao }) {
   const phones = [data.telefone?.trim(), data.celular?.trim()].filter(Boolean);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col border border-slate-300 p-3 text-[12px] leading-snug print:break-inside-avoid print:text-[11.5px]">
-      <header className="mb-2 flex items-center justify-between border-b border-dashed border-slate-300 pb-2">
+    <div className="flex h-full min-h-0 min-w-0 flex-col border border-slate-200 p-3 text-[12px] leading-snug print:break-inside-avoid print:border-slate-300 print:text-[11.5px]">
+      <header className="mb-3 flex items-center justify-between border-b border-slate-200 pb-3">
         <div className="grid min-w-0 flex-1 grid-cols-[auto_1fr] grid-rows-[auto_auto_auto] gap-x-2 gap-y-0.5 pr-2">
           <img
             src="/smart_limp.png"
@@ -29,124 +31,133 @@ function Via({ data, label }: { data: Impressao; label: string }) {
             className="row-span-2 h-[3.6rem] w-auto max-w-[8rem] self-center object-contain object-left print:h-[3.5rem] print:max-w-[7.5rem]"
           />
           <div className="text-base font-bold leading-tight">Smart Limp</div>
-          <div className="leading-snug">
+          <div className="leading-snug text-slate-500">
             Rua Marcos Luiz Sposaro, 98 • Nova Petrópolis • São Bernardo do Campo • SP
           </div>
-          <div className="col-start-2">Cel: (11) 9 4230-7072 / (11) 9 4230-7072</div>
+          <div className="col-start-2 text-slate-500">Cel: (11) 9 4230-7072 / (11) 9 4230-7072</div>
         </div>
-        <div className="text-right">
-          <div className="text-lg font-bold">#{data.numero}</div>
-          <div className="text-blue-600">({label})</div>
+        <div className="shrink-0">
+          <div className="rounded-lg bg-slate-800 px-2.5 py-1 text-lg font-bold tabular-nums text-white">
+            #{data.numero}
+          </div>
         </div>
       </header>
 
-      <div className="mb-2">
+      <div className="mb-3">
         <div className="text-xl font-bold uppercase leading-tight tracking-tight text-slate-900 sm:text-2xl">
           {data.cliente}
         </div>
-        <div className="mt-1 text-[12.5px] font-bold text-slate-700">
+        <div className="mt-0.5 text-[12.5px] font-medium text-slate-600">
           {data.logradouro}, {data.numero_casa} • {data.bairro} • {data.cidade}
         </div>
         {phones.length > 0 && (
-          <div className="text-[11px] text-slate-600">
-            Tel: {phones.join(' / ')}
-          </div>
+          <div className="text-[11px] text-slate-500">Tel: {phones.join(' / ')}</div>
         )}
       </div>
 
-      <table className="mb-2 w-full border border-slate-300">
-        <tbody>
-          <tr>
-            <th className="border border-slate-300 bg-slate-100 px-1 text-left">Pacote</th>
-            <td className="border border-slate-300 px-1">{data.pacote || '-'}</td>
-            <th className="border border-slate-300 bg-slate-100 px-1 text-left">Data</th>
-            <td className="border border-slate-300 px-1">{data.data_comanda}</td>
-            {data.tipo_cliente === 'fixo' && (
-              <>
-                <th className="border border-slate-300 bg-slate-100 px-1 text-left">
-                  {data.antecipado === 'S' ? 'Restante Pacote' : 'Total Pacote'}
-                </th>
-                <td className="border border-slate-300 px-1 font-bold">{data.total_vencimento}</td>
-              </>
-            )}
-          </tr>
-        </tbody>
-      </table>
+      <div className="mb-3 flex flex-wrap gap-x-5 gap-y-0.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11.5px]">
+        <span>
+          <span className="font-semibold text-slate-500">Pacote: </span>
+          <span className="font-medium">{data.pacote || '-'}</span>
+        </span>
+        <span>
+          <span className="font-semibold text-slate-500">Data: </span>
+          <span>{data.data_comanda}</span>
+        </span>
+        {data.tipo_cliente === 'fixo' && (
+          <span>
+            <span className="font-semibold text-slate-500">
+              {data.antecipado === 'S' ? 'Restante Pacote: ' : 'Total Pacote: '}
+            </span>
+            <span className="font-bold">{data.total_vencimento}</span>
+          </span>
+        )}
+      </div>
 
-      <table className="w-full table-fixed border border-slate-300">
+      <table className="w-full table-fixed border border-slate-200">
         <colgroup>
-          <col className="w-[2.35rem]" />
+          <col className="w-[2.6rem]" />
           <col />
-          <col className="w-[3.5rem]" />
-          <col className="w-[5rem]" />
-          <col className="w-[4.5rem]" />
+          <col className="w-[3.9rem]" />
+          <col className="w-[5.5rem]" />
+          <col className="w-[5.9rem]" />
         </colgroup>
         <thead>
-          <tr className="bg-slate-100">
-            <th className="border border-slate-300 px-1 text-center">Qtd</th>
-            <th className="border border-slate-300 px-1 text-left">Descrição</th>
-            <th className="border border-slate-300 px-1 text-center">Serviço</th>
-            <th className="border border-slate-300 px-1 text-right">Valor</th>
-            <th className="border border-slate-300 px-0.5 text-right">Sub-Total</th>
+          <tr className="bg-slate-800 text-white">
+            <th className="overflow-hidden px-1.5 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider">
+              Qtd
+            </th>
+            <th className="overflow-hidden px-1.5 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider">
+              Descrição
+            </th>
+            <th className="overflow-hidden px-1.5 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider">
+              Serv.
+            </th>
+            <th className="overflow-hidden px-1.5 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider">
+              Valor
+            </th>
+            <th className="overflow-hidden px-1.5 py-1.5 text-right text-[10px] font-semibold uppercase tracking-wider">
+              Sub-Total
+            </th>
           </tr>
         </thead>
         <tbody>
           {data.pecas.map((p, i) => (
-            <tr key={i}>
-              <td className="border border-slate-300 px-1 text-center text-[13px] font-bold tabular-nums">
+            <tr key={i} className={`border-t border-slate-100 ${i % 2 !== 0 ? 'bg-slate-50' : 'bg-white'}`}>
+              <td className="overflow-hidden px-1.5 py-1 text-center text-[13px] font-bold tabular-nums">
                 {p.quantidade}
               </td>
-              <td className="border border-slate-300 px-1">{p.descricao}</td>
-              <td className="border border-slate-300 px-1 text-center text-[13px] font-medium">
+              <td className="overflow-hidden break-words px-1.5 py-1">{p.descricao}</td>
+              <td className="overflow-hidden px-1.5 py-1 text-center text-[13px] font-medium">
                 {servicoAbrev[p.tipo_servico] ?? servicoAbrev[p.tipo] ?? p.tipo_servico}
               </td>
-              <td className="border border-slate-300 px-1 text-right text-[13px] tabular-nums leading-tight">
+              <td className="overflow-hidden whitespace-nowrap px-1.5 py-1 text-right text-[12px] tabular-nums leading-tight">
                 {formatBRL(p.valor_peca)}
               </td>
-              <td className="border border-slate-300 px-0.5 text-right text-[11px] tabular-nums leading-tight">
+              <td className="overflow-hidden whitespace-nowrap px-1.5 py-1 text-right text-[11px] tabular-nums leading-tight">
                 {formatBRL(p.valor_total)}
               </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr>
-            <th colSpan={2} className="border border-slate-300 bg-slate-50 px-1 text-right">
+          <tr className="border-t border-slate-200 bg-slate-50">
+            <td colSpan={2} className="overflow-hidden px-2 py-1 text-right text-[11px] text-slate-500">
               Sub-Total:
-            </th>
-            <th className="border border-slate-300 bg-slate-50 px-0.5 text-right text-[11px] tabular-nums leading-tight">
+            </td>
+            <td className="overflow-hidden px-1 py-1 text-right text-[11px] tabular-nums leading-tight">
               {formatBRL(data.sub_total)}
-            </th>
-            <th className="border border-slate-300 bg-slate-50 px-1 text-right">Desconto:</th>
-            <td className="border border-slate-300 bg-slate-50 px-0.5 text-right text-[11px] tabular-nums leading-tight">
+            </td>
+            <td className="overflow-hidden px-2 py-1 text-right text-[11px] text-slate-500">Desconto:</td>
+            <td className="overflow-hidden px-1 py-1 text-right text-[11px] tabular-nums leading-tight">
               {formatBRL(data.desconto)}
             </td>
           </tr>
-          <tr>
-            <th colSpan={2} className="border border-slate-300 bg-slate-50 px-1 text-right">
+          <tr className="border-t border-slate-100 bg-slate-50">
+            <td colSpan={2} className="overflow-hidden px-2 py-1 text-right text-[11px] text-slate-500">
               Saldo:
-            </th>
-            <td className="border border-slate-300 bg-slate-50 px-0.5 text-right text-[11px] tabular-nums leading-tight">
+            </td>
+            <td className="overflow-hidden px-1 py-1 text-right text-[11px] tabular-nums leading-tight">
               {formatBRL(data.saldo)}
             </td>
-            <th className="border border-slate-300 bg-slate-50 px-1 text-right">Acréscimo:</th>
-            <td className="border border-slate-300 bg-slate-50 px-0.5 text-right text-[11px] tabular-nums leading-tight">
+            <td className="overflow-hidden px-2 py-1 text-right text-[11px] text-slate-500">Acréscimo:</td>
+            <td className="overflow-hidden px-1 py-1 text-right text-[11px] tabular-nums leading-tight">
               {formatBRL(data.acrescimo)}
             </td>
           </tr>
-          <tr>
-            <th colSpan={2} className="border border-slate-300 bg-slate-100 px-1 text-right">
+          <tr className="border-t-2 border-slate-300 bg-white">
+            <td colSpan={2} className="overflow-hidden px-2 py-1.5 text-right text-[11px] font-semibold text-slate-600">
               Total de Peças:
-            </th>
-            <th className="border border-slate-300 bg-slate-100 px-0.5 text-center font-bold tabular-nums">
+            </td>
+            <td className="overflow-hidden px-1 py-1.5 text-center text-sm font-bold tabular-nums">
               {data.total_pecas}
-            </th>
-            <th className="border border-slate-300 bg-slate-100 px-1 text-right text-sm font-bold">
+            </td>
+            <td className="overflow-hidden px-2 py-1.5 text-right text-[11px] font-semibold text-slate-600">
               Valor:
-            </th>
-            <th className="border border-slate-300 bg-slate-100 px-0.5 text-right text-lg font-bold tabular-nums leading-tight print:text-xl">
+            </td>
+            <td className="overflow-hidden whitespace-nowrap px-1 py-1.5 text-right text-base font-bold tabular-nums leading-tight print:text-lg">
               {formatBRL(data.total_valor)}
-            </th>
+            </td>
           </tr>
         </tfoot>
       </table>
@@ -178,20 +189,104 @@ export default function ImprimirComandaPage() {
     };
   }, [id]);
 
-  useEffect(() => {
-    if (data) {
-      setTimeout(() => window.print(), 400);
-    }
-  }, [data]);
+  const gerarImagemComanda = async () => {
+    if (!data) return null;
+    const root = document.getElementById('comanda-via-unica');
+    if (!root) return null;
 
-  if (error) return <div className="p-8 text-rose-600">{error}</div>;
-  if (!data) return <div className="p-8"><Spinner /></div>;
+    const canvas = await html2canvas(root, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      onclone: (_doc, el) => {
+        el.querySelectorAll<HTMLElement>('td, th').forEach((cell) => {
+          cell.style.overflow = 'hidden';
+        });
+      },
+    });
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((fileBlob) => resolve(fileBlob), 'image/png');
+    });
+    if (!blob) return null;
+
+    return new File([blob], `comanda-${data.numero}.png`, { type: 'image/png' });
+  };
+
+  const compartilharNoWhatsApp = async () => {
+    if (!data) return;
+    const imagem = await gerarImagemComanda();
+
+    if (
+      imagem &&
+      typeof navigator !== 'undefined' &&
+      'share' in navigator &&
+      'canShare' in navigator &&
+      navigator.canShare?.({ files: [imagem] })
+    ) {
+      try {
+        await navigator.share({
+          title: `Comanda #${data.numero}`,
+          text: `${data.total_pecas} ${data.total_pecas === 1 ? 'peça' : 'peças'} • Total: ${formatBRL(data.total_valor)}`,
+          files: [imagem],
+        });
+        return;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        // Erro real — cai no fallback abaixo.
+      }
+    }
+
+    if (imagem) {
+      const imageUrl = URL.createObjectURL(imagem);
+      window.open(imageUrl, '_blank', 'noopener,noreferrer');
+      toast('Seu navegador não compartilha imagem direto no WhatsApp. A imagem foi aberta para você enviar.');
+      return;
+    }
+
+    toast.error('Não foi possível gerar a imagem da comanda.');
+  };
+
+  if (error)
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8 text-rose-600">
+        {error}
+      </div>
+    );
+  if (!data)
+    return (
+      <div className="flex min-h-screen items-center justify-center p-8">
+        <Spinner />
+      </div>
+    );
 
   return (
-    <div className="flex min-h-screen flex-col bg-white p-2 print:min-h-0">
-      <div className="comanda-impressao-vias grid min-h-0 w-full flex-1 grid-cols-2 auto-rows-fr gap-2 print:auto-rows-auto print:flex-none print:grid-cols-2 print:gap-3">
-        <Via data={data} label="via Cliente" />
-        <Via data={data} label="via Lavanderia" />
+    <div className="min-h-screen py-8 print:min-h-0 print:py-0">
+      <div className="mx-auto max-w-2xl px-4 print:max-w-none print:px-0">
+        <div className="mb-6 print:hidden">
+          <p className="mb-0.5 text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Comanda
+          </p>
+          <h1 className="mb-4">
+            #{data.numero} — {data.cliente}
+          </h1>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-primary" onClick={() => window.print()}>
+              Imprimir / Salvar PDF
+            </button>
+            <button type="button" className="btn-secondary" onClick={compartilharNoWhatsApp}>
+              Compartilhar no WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="comanda-via-unica"
+          className="overflow-hidden rounded-2xl shadow-card print:rounded-none print:shadow-none"
+        >
+          <Via data={data} />
+        </div>
       </div>
     </div>
   );
