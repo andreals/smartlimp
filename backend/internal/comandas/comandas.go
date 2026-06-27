@@ -719,6 +719,83 @@ func (h *Handler) Pagamento(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
+type ComandaPecaDetalhe struct {
+	ID          int64   `json:"id"`
+	Descricao   string  `json:"descricao"`
+	Quantidade  int     `json:"quantidade"`
+	TipoServico string  `json:"tipo_servico"`
+	ValorPeca   float64 `json:"valor_peca"`
+	ValorTotal  float64 `json:"valor_total"`
+	EntraPacote string  `json:"entra_pacote"`
+	TipoCliente string  `json:"tipo_cliente"`
+	Conferido   string  `json:"conferido"`
+}
+
+func (h *Handler) Pecas(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	rows, err := h.db.Query(`
+		SELECT cp.id, UPPER(p.nome), cp.quantidade, cp.tipo::text,
+		       cp.valor_peca::float8, cp.conferido, cl.tipo::text,
+		       CASE WHEN cl.tipo::text = 'fixo'
+		                 AND p.entra_pacote = 'S'
+		                 AND cp.tipo::text = COALESCE(pk.tipo::text, '')
+		            THEN 'S' ELSE 'N' END AS entra_pacote_efetivo
+		FROM comanda_pecas cp
+		JOIN pecas p ON cp.id_peca = p.id
+		JOIN comandas c ON cp.id_comanda = c.id
+		JOIN clientes cl ON c.id_cliente = cl.id
+		LEFT JOIN pacotes pk ON cl.id_pacote = pk.id
+		WHERE cp.id_comanda = $1
+		ORDER BY p.nome
+	`, id)
+	if err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao buscar peças", err)
+		return
+	}
+	defer rows.Close()
+
+	out := []ComandaPecaDetalhe{}
+	for rows.Next() {
+		var c ComandaPecaDetalhe
+		var tipo string
+		if err := rows.Scan(&c.ID, &c.Descricao, &c.Quantidade, &tipo, &c.ValorPeca, &c.Conferido, &c.TipoCliente, &c.EntraPacote); err != nil {
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao ler peças", err)
+			return
+		}
+		switch tipo {
+		case "lavarpassar":
+			c.TipoServico = "LP"
+		case "lavar":
+			c.TipoServico = "L"
+		case "passar":
+			c.TipoServico = "P"
+		case "tingir":
+			c.TipoServico = "T"
+		default:
+			c.TipoServico = tipo
+		}
+		c.ValorTotal = float64(c.Quantidade) * c.ValorPeca
+		out = append(out, c)
+	}
+	httpx.JSON(w, http.StatusOK, out)
+}
+
+func (h *Handler) ToggleConferido(w http.ResponseWriter, r *http.Request) {
+	pecaId := chi.URLParam(r, "pecaId")
+	var conferido string
+	err := h.db.QueryRow(`
+		UPDATE comanda_pecas
+		SET conferido = CASE WHEN conferido = 'S' THEN 'N' ELSE 'S' END
+		WHERE id = $1
+		RETURNING conferido
+	`, pecaId).Scan(&conferido)
+	if err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao atualizar conferido", err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"conferido": conferido})
+}
+
 func totalPecasComanda(pecas []pecaPayload) int {
 	total := 0
 	for _, pe := range pecas {

@@ -50,10 +50,20 @@ func (h *Handler) Comandas(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT x1.id, x3.nome, x1.numero, x1.id_cliente, x1.efetuou_pagamento,
 		       TO_CHAR(x1.data, 'DD/MM/YYYY') AS data,
-		       SUM(x2.valor_peca*x2.quantidade) AS valor, SUM(x2.quantidade) AS quantidade
+		       SUM(
+		         CASE WHEN x3.tipo::text = 'fixo'
+		                   AND p.entra_pacote = 'S'
+		                   AND x2.tipo::text = pk.tipo::text
+		              THEN 0
+		              ELSE x2.valor_peca * x2.quantidade
+		         END
+		       ) AS valor,
+		       SUM(x2.quantidade) AS quantidade
 		FROM comandas x1
 		JOIN comanda_pecas x2 ON x1.id = x2.id_comanda
 		JOIN clientes x3 ON x3.id = x1.id_cliente
+		JOIN pecas p ON x2.id_peca = p.id
+		LEFT JOIN pacotes pk ON x3.id_pacote = pk.id
 		WHERE x1.data BETWEEN $1 AND $2`
 	args := []any{dataInicio, dataFim}
 	if idCliente != "" {

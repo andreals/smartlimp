@@ -246,10 +246,21 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Faturamento previsto: todos os valores do período sem filtro de pagamento.
 	fixoVal := fixoProrata + fixoExtrasPacote + fixoSemPacote
-	out.FaturamentoTotal = avulsoVal + fixoVal
+
+	// Faturamento real: soma dos valor_pago registrados em fechamentos no período.
+	if err := h.db.QueryRow(`
+		SELECT COALESCE(SUM(valor_pago), 0)
+		FROM fechamentos
+		WHERE MAKE_DATE(ano, mes, 1) >= DATE_TRUNC('month', $1::date)
+		  AND MAKE_DATE(ano, mes, 1) <= DATE_TRUNC('month', $2::date)`,
+		diSQL, dfSQL).Scan(&out.FaturamentoTotal); err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao somar fechamentos", err)
+		return
+	}
 	if qComandas > 0 {
-		out.TicketMedio = out.FaturamentoTotal / float64(qComandas)
+		out.TicketMedio = (avulsoVal + fixoVal) / float64(qComandas)
 	}
 
 	if err := h.db.QueryRow(`
@@ -508,54 +519,28 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		addedLonga++
 	}
 
-	// Faturamento previsto: mesmo mês civil, período estritamente menor que o mês.
-	// Avulso: total no filtro. Fixo ativo (≥1 comanda no filtro): mensalidade do mês cheio
-	// (preço × dias do mês ÷ 30) + extras e fixo sem pacote apenas do período filtrado.
-	dFiltro := inclusiveCalendarDays(di, df)
-	dMes := daysInMonthOf(di)
-	sameMonth := di.Year() == df.Year() && di.Month() == df.Month()
-	if sameMonth && dFiltro > 0 && dFiltro < dMes {
-		var fixoProrataMes float64
-		if err := h.db.QueryRow(`
-			SELECT COALESCE(SUM(
-				p.preco * $3::numeric / 30.0
-			), 0)
-			FROM clientes c
-			JOIN pacotes p ON p.id = c.id_pacote
-			WHERE c.tipo = 'fixo' AND c.id_pacote IS NOT NULL
-			AND EXISTS (
-				SELECT 1 FROM comandas co
-				WHERE co.id_cliente = c.id AND co.data BETWEEN $1 AND $2
-			)`,
-			diSQL, dfSQL, dMes,
-		).Scan(&fixoProrataMes); err != nil {
-			httpx.Error(w, r, http.StatusInternalServerError, "erro ao calcular pró-rata fixo (previsão mês)", err)
-			return
-		}
-		fixoLinhasParcial := fixoExtrasPacote + fixoSemPacote
-		prevAvulso := avulsoVal
-		prevFixo := fixoProrataMes + fixoLinhasParcial
-		out.MostrarFaturamentoPrevisto = true
-		out.FaturamentoPrevistoAvulso = prevAvulso
-		out.FaturamentoPrevistoFixo = prevFixo
-		out.FaturamentoPrevisto = prevAvulso + prevFixo
-		out.PrevistoDiasFiltro = dFiltro
-		out.PrevistoDiasMes = dMes
+	// Faturamento previsto: avulso + valor cheio dos pacotes dos mensalistas + peças avulsas dos mensalistas.
+	// Sempre exibido, independente de mês cheio ou parcial.
+	var fixoPacotesPrevisto float64
+	if err := h.db.QueryRow(`
+		SELECT COALESCE(SUM(p.preco), 0)
+		FROM clientes c
+		JOIN pacotes p ON p.id = c.id_pacote
+		WHERE c.tipo = 'fixo' AND c.id_pacote IS NOT NULL
+		AND EXISTS (
+			SELECT 1 FROM comandas co
+			WHERE co.id_cliente = c.id AND co.data BETWEEN $1 AND $2
+		)`,
+		diSQL, dfSQL).Scan(&fixoPacotesPrevisto); err != nil {
+		httpx.Error(w, r, http.StatusInternalServerError, "erro ao somar pacotes do previsto", err)
+		return
 	}
+	fixoValPrevisto := fixoPacotesPrevisto + fixoExtrasPacote + fixoSemPacote
+	out.MostrarFaturamentoPrevisto = true
+	out.FaturamentoPrevistoAvulso = avulsoVal
+	out.FaturamentoPrevistoFixo = fixoValPrevisto
+	out.FaturamentoPrevisto = avulsoVal + fixoValPrevisto
 
 	httpx.JSON(w, http.StatusOK, out)
 }
 
-func inclusiveCalendarDays(di, df time.Time) int {
-	n := 0
-	for d := time.Date(di.Year(), di.Month(), di.Day(), 0, 0, 0, 0, di.Location()); !d.After(time.Date(df.Year(), df.Month(), df.Day(), 0, 0, 0, 0, df.Location())); d = d.AddDate(0, 0, 1) {
-		n++
-	}
-	return n
-}
-
-func daysInMonthOf(t time.Time) int {
-	first := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
-	last := first.AddDate(0, 1, -1)
-	return last.Day()
-}

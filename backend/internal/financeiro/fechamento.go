@@ -82,6 +82,7 @@ type FechamentoOut struct {
 	ExcedentePecas   int64               `json:"excedente_pecas"`
 	ValorExcedente   float64             `json:"valor_excedente"`
 	Total            float64             `json:"total"`
+	ValorPago        *float64            `json:"valor_pago"`
 }
 
 func (h *Handler) Fechamento(w http.ResponseWriter, r *http.Request) {
@@ -196,14 +197,24 @@ func (h *Handler) Fechamento(w http.ResponseWriter, r *http.Request) {
 		out.Total = totalAvulso
 	}
 
+	var vp sql.NullFloat64
+	_ = h.db.QueryRow(`
+		SELECT valor_pago FROM fechamentos WHERE id_cliente = $1 AND mes = $2 AND ano = $3
+	`, idCliente, mes, ano).Scan(&vp)
+	if vp.Valid {
+		v := vp.Float64
+		out.ValorPago = &v
+	}
+
 	httpx.JSON(w, http.StatusOK, out)
 }
 
 func (h *Handler) Fechar(w http.ResponseWriter, r *http.Request) {
 	type payload struct {
-		IDCliente int64 `json:"id_cliente"`
-		Mes       int   `json:"mes"`
-		Ano       int   `json:"ano"`
+		IDCliente int64    `json:"id_cliente"`
+		Mes       int      `json:"mes"`
+		Ano       int      `json:"ano"`
+		ValorPago *float64 `json:"valor_pago"`
 	}
 	var p payload
 	if err := httpx.Decode(r, &p); err != nil {
@@ -226,54 +237,6 @@ func (h *Handler) Fechar(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	// Verifica se é cliente fixo com pacote e calcula excedente
-	var precoPacote float64
-	var qtdPacote int64
-	var tipoPacote string
-	err = tx.QueryRow(`
-		SELECT COALESCE(pk.preco, 0)::float8, COALESCE(pk.quantidade, 0), COALESCE(pk.tipo::text, '')
-		FROM clientes cl
-		LEFT JOIN pacotes pk ON cl.id_pacote = pk.id
-		WHERE cl.id = $1 AND cl.tipo::text = 'fixo'
-	`, p.IDCliente).Scan(&precoPacote, &qtdPacote, &tipoPacote)
-
-	isFixo := err == nil && tipoPacote != "" && qtdPacote > 0
-
-	if isFixo {
-		var totalPecas int64
-		_ = tx.QueryRow(`
-			SELECT COALESCE(SUM(cp.quantidade), 0)
-			FROM comandas c
-			JOIN comanda_pecas cp ON c.id = cp.id_comanda
-			JOIN pecas p ON cp.id_peca = p.id
-			WHERE c.id_cliente = $1 AND c.data BETWEEN $2 AND $3
-			  AND p.entra_pacote = 'S' AND cp.tipo::text = $4
-		`, p.IDCliente, dataInicio, dataFim, tipoPacote).Scan(&totalPecas)
-
-		excedente := totalPecas - qtdPacote
-		if excedente > 0 {
-			valorUnitario := precoPacote / float64(qtdPacote)
-			valorExcedente := float64(excedente) * valorUnitario
-
-			var ultimaComanda int64
-			if err = tx.QueryRow(`
-				SELECT id FROM comandas
-				WHERE id_cliente = $1 AND data BETWEEN $2 AND $3
-				ORDER BY data DESC, id DESC LIMIT 1
-			`, p.IDCliente, dataInicio, dataFim).Scan(&ultimaComanda); err != nil {
-				httpx.Error(w, r, http.StatusInternalServerError, "erro ao buscar última comanda", err)
-				return
-			}
-
-			if _, err = tx.Exec(`
-				INSERT INTO comanda_adicionais(id_comanda, valor, tipo) VALUES ($1, $2, 'acrescimo')
-			`, ultimaComanda, valorExcedente); err != nil {
-				httpx.Error(w, r, http.StatusInternalServerError, "erro ao inserir acréscimo de excedente", err)
-				return
-			}
-		}
-	}
-
 	if _, err = tx.Exec(`
 		UPDATE comandas
 		SET efetuou_pagamento = 'S'
@@ -281,6 +244,18 @@ func (h *Handler) Fechar(w http.ResponseWriter, r *http.Request) {
 	`, p.IDCliente, dataInicio, dataFim); err != nil {
 		httpx.Error(w, r, http.StatusInternalServerError, "erro ao realizar fechamento", err)
 		return
+	}
+
+	if p.ValorPago != nil {
+		if _, err = tx.Exec(`
+			INSERT INTO fechamentos(id_cliente, mes, ano, valor_pago)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (id_cliente, mes, ano)
+			DO UPDATE SET valor_pago = EXCLUDED.valor_pago, data_registro = NOW()
+		`, p.IDCliente, p.Mes, p.Ano, *p.ValorPago); err != nil {
+			httpx.Error(w, r, http.StatusInternalServerError, "erro ao registrar valor pago", err)
+			return
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

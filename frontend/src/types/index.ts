@@ -110,6 +110,18 @@ export interface Impressao {
   valor_pontos: number;
 }
 
+export interface ComandaPecaDetalhe {
+  id: number;
+  descricao: string;
+  quantidade: number;
+  tipo_servico: string;
+  valor_peca: number;
+  valor_total: number;
+  entra_pacote: string;
+  tipo_cliente: string;
+  conferido: 'S' | 'N';
+}
+
 export interface FechamentoComanda {
   id: number;
   numero: number;
@@ -131,6 +143,7 @@ export interface FechamentoOut {
   excedente_pecas: number;
   valor_excedente: number;
   total: number;
+  valor_pago: number | null;
 }
 
 export type DashboardGranularidade = 'dia' | 'semana' | 'mes';
@@ -185,7 +198,6 @@ export interface DashboardResponse {
   granularidade: DashboardGranularidade;
   dias_sem_comanda: number;
   faturamento_total: number;
-  /** Só true quando o filtro é menor que o mês civil e início/fim no mesmo mês */
   mostrar_faturamento_previsto: boolean;
   faturamento_previsto: number;
   faturamento_previsto_avulso: number;

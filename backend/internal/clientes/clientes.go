@@ -129,7 +129,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if len(where) > 0 {
 		sqlStmt += " WHERE " + strings.Join(where, " AND ")
 	}
-	sqlStmt += " ORDER BY x1.nome"
+	sqlStmt += " ORDER BY (x1.status = 'ativo') DESC, x1.nome"
 
 	rows, err := h.db.Query(sqlStmt, args...)
 	if err != nil {

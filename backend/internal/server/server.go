@@ -78,6 +78,8 @@ func New(cfg *config.Config, db *sql.DB) http.Handler {
 			r.Delete("/{id}", comandasH.Delete)
 			r.Get("/{id}/impressao", comandasH.Impressao)
 			r.Post("/{id}/pagamento", comandasH.Pagamento)
+			r.Get("/{id}/pecas", comandasH.Pecas)
+			r.Patch("/{id}/pecas/{pecaId}/conferido", comandasH.ToggleConferido)
 		})
 
 		r.Route("/api/financeiro", func(r chi.Router) {

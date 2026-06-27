@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import Spinner from '@/components/Spinner';
 import EmptyState from '@/components/EmptyState';
 import AutocompleteSelect from '@/components/AutocompleteSelect';
+import Modal from '@/components/Modal';
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -36,6 +37,9 @@ export default function FechamentoPage() {
   const [resultado, setResultado] = useState<FechamentoOut | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingFechar, setLoadingFechar] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [valorPago, setValorPago] = useState('');
+  const [editando, setEditando] = useState(false);
 
   useEffect(() => {
     setIdCliente('');
@@ -68,15 +72,39 @@ export default function FechamentoPage() {
     }
   };
 
-  const realizarFechamento = async () => {
+  const parseValorPago = (s: string) => {
+    const n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+    return isNaN(n) ? 0 : n;
+  };
+
+  const realizarFechamento = () => {
     if (!idCliente || !resultado) return;
-    if (!confirm(`Confirma o fechamento de todas as comandas pendentes de ${resultado.cliente} em ${mesNome} de ${ano}?`)) return;
+    setEditando(false);
+    setValorPago(resultado.total.toFixed(2).replace('.', ','));
+    setModalOpen(true);
+  };
+
+  const editarFechamento = () => {
+    if (!resultado?.valor_pago) return;
+    setEditando(true);
+    setValorPago(resultado.valor_pago.toFixed(2).replace('.', ','));
+    setModalOpen(true);
+  };
+
+  const confirmarFechamento = async () => {
+    const valor = parseValorPago(valorPago);
+    if (valor <= 0) {
+      toast.error('Informe um valor válido');
+      return;
+    }
+    setModalOpen(false);
     setLoadingFechar(true);
     try {
       await api.post('/financeiro/fechamento', {
         id_cliente: Number(idCliente),
         mes: Number(mes),
         ano: Number(ano),
+        valor_pago: valor,
       });
       toast.success('Fechamento realizado com sucesso');
       const { data } = await api.get<FechamentoOut>('/financeiro/fechamento', {
@@ -110,6 +138,51 @@ export default function FechamentoPage() {
 
   return (
     <>
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editando ? 'Editar Valor Pago' : 'Realizar Fechamento'}
+        subtitle={resultado ? `${resultado.cliente} — ${mesNome} ${ano}` : ''}
+        size="md"
+      >
+        {resultado && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
+              <span className="text-slate-600">Total do mês</span>
+              <span className="font-semibold text-slate-900">{formatBRL(resultado.total)}</span>
+            </div>
+
+            <div>
+              <label htmlFor="valor-pago" className="block text-sm font-medium text-slate-700">
+                Valor pago (R$)
+              </label>
+              <input
+                id="valor-pago"
+                type="text"
+                inputMode="decimal"
+                className="input mt-1 w-full"
+                value={valorPago}
+                onChange={(e) => setValorPago(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <button type="button" className="btn-secondary" onClick={() => setModalOpen(false)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={confirmarFechamento}
+                disabled={loadingFechar}
+              >
+                {loadingFechar ? 'Fechando…' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
       <PageHeader title="Fechamento" subtitle="Fechamento mensal por cliente" />
 
       <section className="card mb-6">
@@ -223,7 +296,7 @@ export default function FechamentoPage() {
             <section className="card">
               <h2 className="mb-4 text-base">Resumo — {mesNome} {ano}</h2>
               <div className="space-y-2 text-sm">
-                {isFixo ? (
+                {isFixo && (
                   <>
                     <div className="flex justify-between">
                       <span className="text-slate-600">
@@ -245,27 +318,39 @@ export default function FechamentoPage() {
                         <span className="font-medium">{formatBRL(resultado.total_avulso)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between border-t border-slate-200 pt-2 font-semibold">
-                      <span>Total do Mês</span>
-                      <span>{formatBRL(resultado.total)}</span>
-                    </div>
                   </>
-                ) : (
-                  <div className="flex justify-between font-semibold">
-                    <span>Total do Mês</span>
-                    <span>{formatBRL(resultado.total)}</span>
+                )}
+                <div className={`flex justify-between font-semibold ${isFixo ? 'border-t border-slate-200 pt-2' : ''}`}>
+                  <span>Total do Mês</span>
+                  <span>{formatBRL(resultado.total)}</span>
+                </div>
+                {resultado.valor_pago != null && (
+                  <div className="flex justify-between text-emerald-700">
+                    <span className="font-medium">Valor pago</span>
+                    <span className="font-semibold">{formatBRL(resultado.valor_pago)}</span>
                   </div>
                 )}
               </div>
-              {resultado.comandas.some((c) => c.efetuou_pagamento === 'N') && (
-                <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
-                  <button
-                    className="btn-primary"
-                    onClick={realizarFechamento}
-                    disabled={loadingFechar}
-                  >
-                    {loadingFechar ? 'Fechando…' : 'Realizar Fechamento'}
-                  </button>
+              {(resultado.comandas.some((c) => c.efetuou_pagamento === 'N') || resultado.valor_pago != null) && (
+                <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-4">
+                  {resultado.valor_pago != null && (
+                    <button
+                      className="btn-secondary"
+                      onClick={editarFechamento}
+                      disabled={loadingFechar}
+                    >
+                      Editar Valor Pago
+                    </button>
+                  )}
+                  {resultado.comandas.some((c) => c.efetuou_pagamento === 'N') && (
+                    <button
+                      className="btn-primary"
+                      onClick={realizarFechamento}
+                      disabled={loadingFechar}
+                    >
+                      {loadingFechar ? 'Fechando…' : 'Realizar Fechamento'}
+                    </button>
+                  )}
                 </div>
               )}
             </section>

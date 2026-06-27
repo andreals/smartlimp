@@ -125,19 +125,14 @@ export default function DashboardPage() {
         />
       ) : (
         <>
-          <section
-            className={`relative z-[100] mb-6 grid gap-4 sm:grid-cols-2 ${data.mostrar_faturamento_previsto ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
-          >
+          <section className="relative z-[100] mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="card relative !overflow-hidden !p-4 pt-5 shadow-card">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-400 via-amber-400 to-brand-600" />
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Faturamento</div>
               <div className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{formatBRL(data.faturamento_total)}</div>
-              <div className="mt-1 text-xs text-slate-500">
-                {data.data_inicio} — {data.data_fim}
-              </div>
+              <div className="mt-1 text-xs text-slate-500">Pagamentos confirmados</div>
             </div>
-            {data.mostrar_faturamento_previsto ? (
-              <div className="card relative z-50 !overflow-visible !p-4 pt-5 shadow-card">
+            <div className="card relative z-50 !overflow-visible !p-4 pt-5 shadow-card">
                 <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-1 bg-gradient-to-r from-teal-400 via-emerald-500 to-cyan-500" />
                 <div className="relative z-[300] flex items-start justify-between gap-2">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Faturamento previsto</div>
@@ -155,9 +150,8 @@ export default function DashboardPage() {
                       role="tooltip"
                       className="pointer-events-none invisible absolute right-0 top-full z-[320] mt-1 w-[min(17rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 text-left text-xs font-normal normal-case leading-relaxed text-slate-600 opacity-0 shadow-xl ring-1 ring-black/10 transition-opacity duration-150 group-hover/tooltip:pointer-events-auto group-hover/tooltip:visible group-hover/tooltip:opacity-100 group-focus-within/tooltip:pointer-events-auto group-focus-within/tooltip:visible group-focus-within/tooltip:opacity-100"
                     >
-                      Mesmo mês civil, filtro com {data.previsto_dias_filtro} de {data.previsto_dias_mes} dias: avulso
-                      = total no período; fixo = mensalidade do mês cheio (preço × {data.previsto_dias_mes} ÷ 30) para
-                      fixo com pacote com comanda no período + extras e fixo sem pacote só nesse intervalo.
+                      Avulso: soma das comandas de clientes avulsos no período. Mensalistas: valor cheio do pacote para
+                      fixos com pacote e comanda no período, mais peças fora do pacote e fixos sem pacote.
                     </div>
                   </span>
                 </div>
@@ -168,8 +162,7 @@ export default function DashboardPage() {
                   Avulso: {formatBRL(data.faturamento_previsto_avulso)} · Fixo:{' '}
                   {formatBRL(data.faturamento_previsto_fixo)}
                 </div>
-              </div>
-            ) : null}
+            </div>
             <div className="card relative !overflow-hidden !p-4 pt-5 shadow-card">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 to-sky-600" />
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ticket médio</div>
