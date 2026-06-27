@@ -12,6 +12,7 @@ import PacotesPage from '@/pages/PacotesPage';
 import PecasPage from '@/pages/PecasPage';
 import UsuariosPage from '@/pages/UsuariosPage';
 import ImprimirComandaPage from '@/pages/ImprimirComandaPage';
+import FechamentoPage from '@/pages/FechamentoPage';
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const { usuario } = useAuth();
@@ -64,6 +65,7 @@ export default function App() {
           <Route index element={<Navigate to="/comanda" replace />} />
           <Route path="comanda" element={<ComandaPage />} />
           <Route path="financeiro" element={<FinanceiroPage />} />
+          <Route path="fechamento" element={<FechamentoPage />} />
           <Route path="gestao" element={<DashboardPage />} />
           <Route path="clientes" element={<ClientesPage />} />
           <Route path="pacotes" element={<PacotesPage />} />

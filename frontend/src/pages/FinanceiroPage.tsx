@@ -5,8 +5,6 @@ import {
   formatBRL,
   formatClienteAutocompleteMeta,
   isValidBRDate,
-  maskBRLInput,
-  parseBRL,
 } from '@/lib/format';
 import type { Cliente, ComandaResumo } from '@/types';
 import PageHeader from '@/components/PageHeader';
@@ -35,26 +33,15 @@ export default function FinanceiroPage() {
   const [idCliente, setIdCliente] = useState('');
   const [dataInicio, setDataInicio] = useState(INICIO_SEMANA);
   const [dataFim, setDataFim] = useState(HOJE);
-  const [diasPagamento, setDiasPagamento] = useState('30');
 
   const [comandas, setComandas] = useState<ComandaResumo[]>([]);
-  const [pagantes, setPagantes] = useState<ComandaResumo[]>([]);
   const [loadingComandas, setLoadingComandas] = useState(false);
-  const [loadingPagantes, setLoadingPagantes] = useState(false);
-
-  const [pagto, setPagto] = useState<{
-    id: number;
-    idCliente: number;
-    valor: number;
-    valorPago: string;
-  } | null>(null);
 
   useEffect(() => {
     api
       .get<Cliente[]>('/clientes')
       .then(({ data }) => {
         setClientes(data);
-        // Auto-filtrar com os valores iniciais ao carregar a página
         setLoadingComandas(true);
         api
           .get<ComandaResumo[]>('/financeiro/comandas', {
@@ -89,20 +76,6 @@ export default function FinanceiroPage() {
     }
   };
 
-  const filtrarPagantes = async () => {
-    setLoadingPagantes(true);
-    try {
-      const { data } = await api.get<ComandaResumo[]>('/financeiro/pagantes', {
-        params: { dias: diasPagamento },
-      });
-      setPagantes(data);
-    } catch (err) {
-      toast.error(extractError(err, 'Erro ao consultar pagantes'));
-    } finally {
-      setLoadingPagantes(false);
-    }
-  };
-
   const excluirComanda = async (id: number) => {
     if (!confirm('Deseja realmente excluir essa comanda?')) return;
     try {
@@ -111,23 +84,6 @@ export default function FinanceiroPage() {
       filtrar();
     } catch (err) {
       toast.error(extractError(err, 'Erro ao excluir'));
-    }
-  };
-
-  const confirmarPagamento = async () => {
-    if (!pagto) return;
-    try {
-      await api.post(`/comandas/${pagto.id}/pagamento`, {
-        id_cliente: pagto.idCliente,
-        valor_comanda: pagto.valor,
-        valor_pago: parseBRL(pagto.valorPago),
-      });
-      toast.success('Pagamento registrado');
-      setPagto(null);
-      filtrar();
-      filtrarPagantes();
-    } catch (err) {
-      toast.error(extractError(err, 'Erro ao registrar pagamento'));
     }
   };
 
@@ -148,7 +104,7 @@ export default function FinanceiroPage() {
 
   return (
     <>
-      <PageHeader title="Financeiro" subtitle="Relatórios financeiros e situação de pagamento" />
+      <PageHeader title="Conferência" subtitle="Conferência de comandas por período" />
 
       <section className="card mb-6">
         <div className="grid gap-3 md:grid-cols-4">
@@ -186,7 +142,6 @@ export default function FinanceiroPage() {
                   <th>Data</th>
                   <th>Qtd</th>
                   <th>Valor</th>
-                  <th>Situação</th>
                   <th></th>
                 </tr>
               </thead>
@@ -208,22 +163,7 @@ export default function FinanceiroPage() {
                     <td>{c.quantidade}</td>
                     <td>{formatBRL(c.valor)}</td>
                     <td>
-                      {c.efetuou_pagamento === 'S' ? (
-                        <span className="pill-success">Pago</span>
-                      ) : (
-                        <span className="pill-danger">Pendente</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          className="btn-secondary text-xs"
-                          onClick={() => setPagto({
-                            id: c.id, idCliente: c.id_cliente, valor: c.valor, valorPago: c.valor.toFixed(2).replace('.', ',')
-                          })}
-                        >
-                          Situação
-                        </button>
+                      <div className="flex justify-end">
                         <button className="btn-danger text-xs" onClick={() => excluirComanda(c.id)}>
                           Excluir
                         </button>
@@ -237,122 +177,13 @@ export default function FinanceiroPage() {
                   <td colSpan={3} className="text-right">Totais:</td>
                   <td>{totalPecas}</td>
                   <td>{formatBRL(totalValor)}</td>
-                  <td colSpan={2}></td>
+                  <td></td>
                 </tr>
               </tfoot>
             </table>
           </div>
         )}
       </section>
-
-      <section className="card mb-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-base">Comandas em aberto</h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">Últimos</span>
-            <select
-              className="input w-24"
-              value={diasPagamento}
-              onChange={(e) => setDiasPagamento(e.target.value)}
-            >
-              <option value="30">30</option>
-              <option value="60">60</option>
-              <option value="90">90</option>
-            </select>
-            <span className="text-sm text-slate-500">dias</span>
-            <button className="btn-primary" onClick={filtrarPagantes}>Filtrar</button>
-          </div>
-        </div>
-        {loadingPagantes ? (
-          <Spinner />
-        ) : pagantes.length === 0 ? (
-          <EmptyState title="Sem comandas em aberto" description="Clique em filtrar para listar." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>#Comanda</th>
-                  <th>Data</th>
-                  <th>Qtd</th>
-                  <th>Valor</th>
-                  <th>Situação</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {pagantes.map((c) => (
-                  <tr key={c.id}>
-                    <td className="font-medium">{c.nome}</td>
-                    <td>
-                      <a className="text-brand-600 hover:underline" href={`/comandas/${c.id}/imprimir`} target="_blank" rel="noreferrer">
-                        #{c.numero}
-                      </a>
-                    </td>
-                    <td>{c.data}</td>
-                    <td>{c.quantidade}</td>
-                    <td>{formatBRL(c.valor)}</td>
-                    <td>
-                      {c.efetuou_pagamento === 'S' ? (
-                        <span className="pill-success">Pago</span>
-                      ) : (
-                        <span className="pill-warning">Pendente</span>
-                      )}
-                    </td>
-                    <td>
-                      <button
-                        className="btn-secondary text-xs"
-                        onClick={() => setPagto({
-                          id: c.id, idCliente: c.id_cliente, valor: c.valor, valorPago: c.valor.toFixed(2).replace('.', ',')
-                        })}
-                      >
-                        Situação
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {pagto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
-          onClick={() => setPagto(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-semibold">Situação do pagamento</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Valor da comanda: <strong>{formatBRL(pagto.valor)}</strong>
-            </p>
-            <div className="mt-4">
-              <label>Valor pago</label>
-              <input
-                className="input mt-1"
-                value={pagto.valorPago}
-                onChange={(e) => setPagto({ ...pagto, valorPago: maskBRLInput(e.target.value) })}
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                Diferença será registrada como saldo do cliente.
-              </p>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button className="btn-secondary" onClick={() => setPagto(null)}>
-                Cancelar
-              </button>
-              <button className="btn-primary" onClick={confirmarPagamento}>
-                Confirmar pagamento
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

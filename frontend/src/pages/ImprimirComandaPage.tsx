@@ -312,7 +312,7 @@ export default function ImprimirComandaPage() {
 
         <div
           id="comanda-via-unica"
-          className="overflow-hidden rounded-2xl shadow-card print:rounded-none print:shadow-none"
+          className="overflVow-hidden rounded-2xl shadow-card print:rounded-none print:shadow-none"
         >
           <Via data={data} observacao={observacao} />
         </div>

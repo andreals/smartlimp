@@ -565,13 +565,14 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 
 			var totalVenc sql.NullInt64
 			if clienteAntecipado == "S" {
-				// Antecipado: mês civil da comanda; todas as peças que entram no pacote (sem exigir tipo = pacote).
+				// Antecipado: mês civil da comanda; apenas comandas até a data atual (inclusive).
 				_ = h.db.QueryRow(`
 					SELECT COALESCE(SUM(x2.quantidade), 0) FROM comandas x1
 					JOIN comanda_pecas x2 ON x1.id = x2.id_comanda
 					JOIN pecas x3 ON x2.id_peca = x3.id
-					WHERE x1.id_cliente = $1 AND x1.data BETWEEN $2 AND $3 AND x3.entra_pacote = 'S'`,
-					idCliente, dataInicio, dataFim,
+					WHERE x1.id_cliente = $1 AND x1.data BETWEEN $2 AND $3
+					  AND x1.data <= $4 AND x3.entra_pacote = 'S'`,
+					idCliente, dataInicio, dataFim, dataRowStr,
 				).Scan(&totalVenc)
 			} else {
 				_ = h.db.QueryRow(`
@@ -580,8 +581,9 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 					JOIN pecas x3 ON x2.id_peca = x3.id
 					JOIN clientes x4 ON x1.id_cliente = x4.id
 					JOIN pacotes x5 ON x4.id_pacote = x5.id
-					WHERE x1.id_cliente = $1 AND x1.data BETWEEN $2 AND $3 AND x3.entra_pacote = 'S' AND x5.tipo = x2.tipo`,
-					idCliente, dataInicio, dataFim,
+					WHERE x1.id_cliente = $1 AND x1.data BETWEEN $2 AND $3
+					  AND x1.data <= $4 AND x3.entra_pacote = 'S' AND x5.tipo = x2.tipo`,
+					idCliente, dataInicio, dataFim, dataRowStr,
 				).Scan(&totalVenc)
 			}
 			totalVencimento = int(totalVenc.Int64)

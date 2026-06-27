@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const navMain = [
   { to: '/comanda', label: 'Comanda', icon: 'shopping-cart' },
   { to: '/gestao', label: 'Gestão', icon: 'pie' },
-  { to: '/financeiro', label: 'Financeiro', icon: 'bar-chart' },
+  { to: '/financeiro', label: 'Conferência', icon: 'bar-chart' },
+  { to: '/fechamento', label: 'Fechamento', icon: 'money-bag' },
 ];
 
 const navCadastro = [
@@ -59,6 +60,14 @@ const icons: Record<string, JSX.Element> = {
   user: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5 shrink-0">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  'money-bag': (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
+      <path d="M12 2C10.3 2 9 3.3 9 5v1H7C5 6 3.5 7.8 3.5 10c0 4.4 2.8 8.5 8.5 8.5S20.5 14.4 20.5 10C20.5 7.8 19 6 17 6h-2V5c0-1.7-1.3-3-3-3z" />
+      <path d="M10 6h4" />
+      <line x1="12" y1="11" x2="12" y2="15" />
+      <line x1="10" y1="13" x2="14" y2="13" />
     </svg>
   ),
   'folder-cadastro': (

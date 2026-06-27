@@ -84,6 +84,9 @@ func New(cfg *config.Config, db *sql.DB) http.Handler {
 			r.Get("/comandas", financeiroH.Comandas)
 			r.Get("/pagantes", financeiroH.Pagantes)
 			r.Get("/dashboard", financeiroH.Dashboard)
+			r.Get("/fechamento", financeiroH.Fechamento)
+			r.Post("/fechamento", financeiroH.Fechar)
+			r.Get("/clientes-fechamento", financeiroH.ClientesFechamento)
 		})
 	})
 

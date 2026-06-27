@@ -110,6 +110,29 @@ export interface Impressao {
   valor_pontos: number;
 }
 
+export interface FechamentoComanda {
+  id: number;
+  numero: number;
+  data: string;
+  quantidade: number;
+  valor_avulso: number;
+  efetuou_pagamento: 'S' | 'N';
+}
+
+export interface FechamentoOut {
+  cliente: string;
+  tipo_cliente: 'fixo' | 'avulso';
+  pacote: string;
+  preco_pacote: number;
+  quantidade_pacote: number;
+  comandas: FechamentoComanda[];
+  total_pecas: number;
+  total_avulso: number;
+  excedente_pecas: number;
+  valor_excedente: number;
+  total: number;
+}
+
 export type DashboardGranularidade = 'dia' | 'semana' | 'mes';
 
 export interface DashboardVolume {
