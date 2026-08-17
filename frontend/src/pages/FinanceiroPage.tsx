@@ -17,15 +17,14 @@ function toddmmyyyy(d: Date): string {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-function inicioSemanaAtual(): string {
+function umaSemanaAtras(): string {
   const hoje = new Date();
-  const dow = hoje.getDay();
-  const seg = new Date(hoje);
-  seg.setDate(hoje.getDate() - (dow === 0 ? 6 : dow - 1));
-  return toddmmyyyy(seg);
+  const semanaAtras = new Date(hoje);
+  semanaAtras.setDate(hoje.getDate() - 7);
+  return toddmmyyyy(semanaAtras);
 }
 
-const INICIO_SEMANA = inicioSemanaAtual();
+const INICIO_SEMANA = umaSemanaAtras();
 const HOJE = toddmmyyyy(new Date());
 
 function tipoServicoExtenso(tipo: string): string {
