@@ -374,7 +374,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		SELECT
 			UPPER(x2.nome) AS cliente,
 			COALESCE(x3.nome, '') AS pacote,
-			COALESCE(x3.tipo::text, '') AS tipo_pacote,
+			x3.tipo AS tipo_pacote,
 			COALESCE(x3.preco, 0) AS valor_pacote,
 			COALESCE(x3.quantidade, 0) AS quantidade_pacote,
 			x2.antecipado,
@@ -389,7 +389,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 			x5.entra_pacote,
 			x1.id_cliente,
 			x1.pagamento,
-			COALESCE(x2.frequencia_pagamento, '') AS frequencia_pagamento,
+			x2.frequencia_pagamento AS frequencia_pagamento,
 			x2.dia_vencimento AS dia_vencimento,
 			COALESCE(x2.logradouro, '') AS logradouro,
 			COALESCE(x2.numero, '') AS numCasa,
