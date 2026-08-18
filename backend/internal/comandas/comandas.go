@@ -374,7 +374,7 @@ func (h *Handler) Impressao(w http.ResponseWriter, r *http.Request) {
 		SELECT
 			UPPER(x2.nome) AS cliente,
 			COALESCE(x3.nome, '') AS pacote,
-			COALESCE(x3.tipo, '') AS tipo_pacote,
+			COALESCE(x3.tipo::text, '') AS tipo_pacote,
 			COALESCE(x3.preco, 0) AS valor_pacote,
 			COALESCE(x3.quantidade, 0) AS quantidade_pacote,
 			x2.antecipado,
