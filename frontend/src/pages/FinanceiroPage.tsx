@@ -134,6 +134,17 @@ export default function FinanceiroPage() {
   const totalPecas = comandas.reduce((acc, c) => acc + Number(c.quantidade || 0), 0);
   const totalValor = comandas.reduce((acc, c) => acc + Number(c.valor || 0), 0);
 
+  const isComandaConferida = (id: number) => {
+    const pecas = pecasCache[id];
+    return !!pecas && pecas.length > 0 && pecas.every((p) => p.conferido === 'S');
+  };
+
+  const comandasOrdenadas = useMemo(() => {
+    const pendentes = comandas.filter((c) => !isComandaConferida(c.id));
+    const conferidas = comandas.filter((c) => isComandaConferida(c.id));
+    return [...pendentes, ...conferidas];
+  }, [comandas, pecasCache]);
+
   const clienteOptions = useMemo(
     () => [
       { value: '', label: 'Todos os clientes' },
@@ -191,9 +202,9 @@ export default function FinanceiroPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {comandas.map((c) => (
+                {comandasOrdenadas.map((c) => (
                   <Fragment key={c.id}>
-                    <tr>
+                    <tr className={`transition-colors ${isComandaConferida(c.id) ? 'bg-emerald-50' : ''}`}>
                       <td className="pr-0">
                         <button
                           type="button"
