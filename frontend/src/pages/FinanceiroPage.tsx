@@ -101,10 +101,10 @@ export default function FinanceiroPage() {
 
   const toggleExpand = async (id: number) => {
     if (expandedIds.has(id)) {
-      setExpandedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+      setExpandedIds(new Set());
       return;
     }
-    setExpandedIds((prev) => new Set(prev).add(id));
+    setExpandedIds(new Set([id]));
     if (pecasCache[id]) return;
     setLoadingPecas((prev) => new Set(prev).add(id));
     try {
@@ -140,10 +140,11 @@ export default function FinanceiroPage() {
   };
 
   const comandasOrdenadas = useMemo(() => {
-    const pendentes = comandas.filter((c) => !isComandaConferida(c.id));
-    const conferidas = comandas.filter((c) => isComandaConferida(c.id));
+    const vaiParaFim = (c: ComandaResumo) => isComandaConferida(c.id) && !expandedIds.has(c.id);
+    const pendentes = comandas.filter((c) => !vaiParaFim(c));
+    const conferidas = comandas.filter((c) => vaiParaFim(c));
     return [...pendentes, ...conferidas];
-  }, [comandas, pecasCache]);
+  }, [comandas, pecasCache, expandedIds]);
 
   const clienteOptions = useMemo(
     () => [
