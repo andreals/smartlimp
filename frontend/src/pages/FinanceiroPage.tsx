@@ -46,6 +46,7 @@ export default function FinanceiroPage() {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [pecasCache, setPecasCache] = useState<Record<number, ComandaPecaDetalhe[]>>({});
   const [loadingPecas, setLoadingPecas] = useState<Set<number>>(new Set());
+  const [finalizadas, setFinalizadas] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     api
@@ -76,6 +77,7 @@ export default function FinanceiroPage() {
     setLoadingComandas(true);
     setExpandedIds(new Set());
     setPecasCache({});
+    setFinalizadas(new Set());
     try {
       const { data } = await api.get<ComandaResumo[]>('/financeiro/comandas', {
         params: { id_cliente: idCliente, data_inicio: dataInicio, data_fim: dataFim },
@@ -99,11 +101,27 @@ export default function FinanceiroPage() {
     }
   };
 
+  const isComandaConferida = (id: number) => {
+    const pecas = pecasCache[id];
+    return !!pecas && pecas.length > 0 && pecas.every((p) => p.conferido === 'S');
+  };
+
   const toggleExpand = async (id: number) => {
+    const atualizarFinalizacao = (alvoId: number) => {
+      setFinalizadas((prev) => {
+        const n = new Set(prev);
+        if (isComandaConferida(alvoId)) n.add(alvoId); else n.delete(alvoId);
+        return n;
+      });
+    };
+
     if (expandedIds.has(id)) {
       setExpandedIds(new Set());
+      atualizarFinalizacao(id);
       return;
     }
+    const anteriorId = expandedIds.size > 0 ? [...expandedIds][0] : undefined;
+    if (anteriorId !== undefined) atualizarFinalizacao(anteriorId);
     setExpandedIds(new Set([id]));
     if (pecasCache[id]) return;
     setLoadingPecas((prev) => new Set(prev).add(id));
@@ -134,17 +152,11 @@ export default function FinanceiroPage() {
   const totalPecas = comandas.reduce((acc, c) => acc + Number(c.quantidade || 0), 0);
   const totalValor = comandas.reduce((acc, c) => acc + Number(c.valor || 0), 0);
 
-  const isComandaConferida = (id: number) => {
-    const pecas = pecasCache[id];
-    return !!pecas && pecas.length > 0 && pecas.every((p) => p.conferido === 'S');
-  };
-
   const comandasOrdenadas = useMemo(() => {
-    const vaiParaFim = (c: ComandaResumo) => isComandaConferida(c.id) && !expandedIds.has(c.id);
-    const pendentes = comandas.filter((c) => !vaiParaFim(c));
-    const conferidas = comandas.filter((c) => vaiParaFim(c));
+    const pendentes = comandas.filter((c) => !finalizadas.has(c.id));
+    const conferidas = comandas.filter((c) => finalizadas.has(c.id));
     return [...pendentes, ...conferidas];
-  }, [comandas, pecasCache, expandedIds]);
+  }, [comandas, finalizadas]);
 
   const clienteOptions = useMemo(
     () => [
