@@ -24,9 +24,6 @@ function umaSemanaAtras(): string {
   return toddmmyyyy(semanaAtras);
 }
 
-const INICIO_SEMANA = umaSemanaAtras();
-const HOJE = toddmmyyyy(new Date());
-
 function tipoServicoExtenso(tipo: string): string {
   switch (tipo) {
     case 'LP': return 'Lavar e Passar';
@@ -40,8 +37,8 @@ function tipoServicoExtenso(tipo: string): string {
 export default function FinanceiroPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [idCliente, setIdCliente] = useState('');
-  const [dataInicio, setDataInicio] = useState(INICIO_SEMANA);
-  const [dataFim, setDataFim] = useState(HOJE);
+  const [dataInicio, setDataInicio] = useState(umaSemanaAtras);
+  const [dataFim, setDataFim] = useState(() => toddmmyyyy(new Date()));
 
   const [comandas, setComandas] = useState<ComandaResumo[]>([]);
   const [loadingComandas, setLoadingComandas] = useState(false);
@@ -58,7 +55,7 @@ export default function FinanceiroPage() {
         setLoadingComandas(true);
         api
           .get<ComandaResumo[]>('/financeiro/comandas', {
-            params: { id_cliente: '', data_inicio: INICIO_SEMANA, data_fim: HOJE },
+            params: { id_cliente: '', data_inicio: dataInicio, data_fim: dataFim },
           })
           .then(({ data: d }) => setComandas(d))
           .catch((err) => toast.error(extractError(err, 'Erro ao consultar comandas')))
