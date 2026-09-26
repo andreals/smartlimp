@@ -75,6 +75,7 @@ type FechamentoOut struct {
 	TipoCliente      string              `json:"tipo_cliente"`
 	Pacote           string              `json:"pacote"`
 	PrecoPacote      float64             `json:"preco_pacote"`
+	Antecipado       bool                `json:"antecipado"`
 	QuantidadePacote int64               `json:"quantidade_pacote"`
 	Comandas         []FechamentoComanda `json:"comandas"`
 	TotalPecas       int64               `json:"total_pecas"`
@@ -103,15 +104,16 @@ func (h *Handler) Fechamento(w http.ResponseWriter, r *http.Request) {
 		tipoPacote       string
 		nomePacote       string
 		quantidadePacote int64
+		antecipado       string
 	)
 	err := h.db.QueryRow(`
 		SELECT cl.nome, cl.tipo::text,
 		       COALESCE(pk.preco, 0)::float8, COALESCE(pk.tipo::text, ''), COALESCE(pk.nome, ''),
-		       COALESCE(pk.quantidade, 0)
+		       COALESCE(pk.quantidade, 0), cl.antecipado::text
 		FROM clientes cl
 		LEFT JOIN pacotes pk ON cl.id_pacote = pk.id
 		WHERE cl.id = $1
-	`, idCliente).Scan(&clienteNome, &clienteTipo, &precoPacote, &tipoPacote, &nomePacote, &quantidadePacote)
+	`, idCliente).Scan(&clienteNome, &clienteTipo, &precoPacote, &tipoPacote, &nomePacote, &quantidadePacote, &antecipado)
 	if err != nil {
 		httpx.Error(w, r, http.StatusInternalServerError, "cliente "+idCliente+": "+err.Error())
 		return
@@ -162,6 +164,7 @@ func (h *Handler) Fechamento(w http.ResponseWriter, r *http.Request) {
 		Pacote:           nomePacote,
 		PrecoPacote:      precoPacote,
 		QuantidadePacote: quantidadePacote,
+		Antecipado:       isFixo && antecipado == "S",
 		Comandas:         []FechamentoComanda{},
 	}
 
@@ -191,7 +194,9 @@ func (h *Handler) Fechamento(w http.ResponseWriter, r *http.Request) {
 		out.ValorExcedente = valorExcedente
 	}
 
-	if isFixo {
+	if isFixo && out.Antecipado {
+		out.Total = totalAvulso + valorExcedente
+	} else if isFixo {
 		out.Total = precoPacote + totalAvulso + valorExcedente
 	} else {
 		out.Total = totalAvulso

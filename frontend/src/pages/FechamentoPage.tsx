@@ -302,7 +302,13 @@ export default function FechamentoPage() {
                       <span className="text-slate-600">
                         Pacote ({resultado.pacote}) — {resultado.total_pecas}/{resultado.quantidade_pacote} peças
                       </span>
-                      <span className="font-medium">{formatBRL(resultado.preco_pacote)}</span>
+                      {resultado.antecipado ? (
+                        <span className="font-medium text-emerald-700">
+                          {formatBRL(resultado.preco_pacote)} — pago antecipadamente
+                        </span>
+                      ) : (
+                        <span className="font-medium">{formatBRL(resultado.preco_pacote)}</span>
+                      )}
                     </div>
                     {resultado.excedente_pecas > 0 && (
                       <div className="flex justify-between text-amber-700">
@@ -321,7 +327,7 @@ export default function FechamentoPage() {
                   </>
                 )}
                 <div className={`flex justify-between font-semibold ${isFixo ? 'border-t border-slate-200 pt-2' : ''}`}>
-                  <span>Total do Mês</span>
+                  <span>{resultado.antecipado ? 'A cobrar (excedente + avulsas)' : 'Total do Mês'}</span>
                   <span>{formatBRL(resultado.total)}</span>
                 </div>
                 {resultado.valor_pago != null && (

@@ -136,6 +136,7 @@ export interface FechamentoOut {
   tipo_cliente: 'fixo' | 'avulso';
   pacote: string;
   preco_pacote: number;
+  antecipado: boolean;
   quantidade_pacote: number;
   comandas: FechamentoComanda[];
   total_pecas: number;
