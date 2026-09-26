@@ -86,12 +86,13 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		clienteEmail sql.NullString
 		clienteTipo  string
 		idPacote     sql.NullInt64
+		antecipado   string
 	)
 	row := tx.QueryRow(
-		`SELECT nome, email, tipo, id_pacote FROM clientes WHERE id = $1`,
+		`SELECT nome, email, tipo, id_pacote, antecipado FROM clientes WHERE id = $1`,
 		p.IDCliente,
 	)
-	if err := row.Scan(&clienteNome, &clienteEmail, &clienteTipo, &idPacote); err != nil {
+	if err := row.Scan(&clienteNome, &clienteEmail, &clienteTipo, &idPacote, &antecipado); err != nil {
 		httpx.Error(w, r, http.StatusBadRequest, "cliente inválido")
 		return
 	}
@@ -116,12 +117,17 @@ func (h *Handler) Save(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	efetuouPagamento := "N"
+	if clienteTipo == "fixo" && antecipado == "S" {
+		efetuouPagamento = "S"
+	}
+
 	var idComanda int64
 	if err := tx.QueryRow(
-		`INSERT INTO comandas(id_usuario, data_cadastro, numero, id_cliente, data, pagamento)
-		 VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+		`INSERT INTO comandas(id_usuario, data_cadastro, numero, id_cliente, data, pagamento, efetuou_pagamento)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
 		user.UserID, time.Now().Format("2006-01-02 15:04:05"),
-		numero, p.IDCliente, dataComanda.Format("2006-01-02"), p.ComandaPagamento,
+		numero, p.IDCliente, dataComanda.Format("2006-01-02"), p.ComandaPagamento, efetuouPagamento,
 	).Scan(&idComanda); err != nil {
 		httpx.Error(w, r, http.StatusInternalServerError, "erro ao inserir comanda", err)
 		return

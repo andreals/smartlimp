@@ -134,6 +134,10 @@ export default function FechamentoPage() {
   );
 
   const isFixo = resultado?.tipo_cliente === 'fixo' && !!resultado?.pacote;
+  const pendente =
+    !!resultado &&
+    (resultado.comandas.some((c) => c.efetuou_pagamento === 'N') ||
+      (resultado.antecipado && resultado.valor_pago == null && resultado.total > 0));
   const mesNome = MESES[Number(mes) - 1];
 
   return (
@@ -337,7 +341,7 @@ export default function FechamentoPage() {
                   </div>
                 )}
               </div>
-              {(resultado.comandas.some((c) => c.efetuou_pagamento === 'N') || resultado.valor_pago != null) && (
+              {(pendente || resultado.valor_pago != null) && (
                 <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-4">
                   {resultado.valor_pago != null && (
                     <button
@@ -348,7 +352,7 @@ export default function FechamentoPage() {
                       Editar Valor Pago
                     </button>
                   )}
-                  {resultado.comandas.some((c) => c.efetuou_pagamento === 'N') && (
+                  {pendente && (
                     <button
                       className="btn-primary"
                       onClick={realizarFechamento}
