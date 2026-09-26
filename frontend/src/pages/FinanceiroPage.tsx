@@ -270,15 +270,15 @@ export default function FinanceiroPage() {
                           ) : (pecasCache[c.id] ?? []).length === 0 ? (
                             <p className="px-4 py-2 text-xs text-slate-400">Nenhuma peça encontrada.</p>
                           ) : (
-                            <table className="w-full text-xs">
+                            <table className="w-full text-sm font-semibold text-slate-800">
                               <thead>
                                 <tr className="border-b border-slate-200 text-left text-slate-500">
-                                  <th className="w-8 py-1.5 pl-10 pr-2 font-medium">✓</th>
-                                  <th className="py-1.5 pr-4 font-medium">Peça</th>
-                                  <th className="py-1.5 pr-4 font-medium">Serviço</th>
-                                  <th className="py-1.5 pr-4 font-medium">Valor unit.</th>
-                                  <th className="py-1.5 pr-4 font-medium">Total</th>
-                                  <th className="py-1.5 pr-4 font-medium">Pacote</th>
+                                  <th className="w-8 py-1.5 pl-10 pr-2 font-semibold">✓</th>
+                                  <th className="py-1.5 pr-4 font-semibold">Peça</th>
+                                  <th className="py-1.5 pr-4 font-semibold">Serviço</th>
+                                  <th className="py-1.5 pr-4 font-semibold">Valor unit.</th>
+                                  <th className="py-1.5 pr-4 font-semibold">Total</th>
+                                  <th className="py-1.5 pr-4 font-semibold">Pacote</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -292,18 +292,18 @@ export default function FinanceiroPage() {
                                         type="checkbox"
                                         checked={p.conferido === 'S'}
                                         onChange={() => toggleConferido(c.id, p.id)}
-                                        className="h-3.5 w-3.5 cursor-pointer rounded accent-emerald-600"
+                                        className="h-4 w-4 cursor-pointer rounded accent-emerald-600"
                                       />
                                     </td>
                                     <td className={`py-1.5 pr-4 ${p.conferido === 'S' ? 'text-slate-400 line-through' : ''}`}>
-                                      <span className="mr-1.5 font-semibold text-slate-500">{p.quantidade}x</span>
+                                      <span className="mr-1.5 font-bold text-slate-600">{p.quantidade}x</span>
                                       {p.descricao}
                                     </td>
                                     <td className="py-1.5 pr-4">{tipoServicoExtenso(p.tipo_servico)}</td>
                                     <td className="py-1.5 pr-4">
                                       {(p.entra_pacote === 'N' || p.tipo_cliente === 'avulso') ? formatBRL(p.valor_peca) : '—'}
                                     </td>
-                                    <td className="py-1.5 pr-4 font-medium">
+                                    <td className="py-1.5 pr-4 font-bold">
                                       {(p.entra_pacote === 'N' || p.tipo_cliente === 'avulso') ? formatBRL(p.valor_total) : '—'}
                                     </td>
                                     <td className="py-1.5 pr-4">
