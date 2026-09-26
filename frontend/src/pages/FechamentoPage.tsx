@@ -133,6 +133,7 @@ export default function FechamentoPage() {
     [clientes],
   );
 
+  const fmtData = (iso: string) => iso.split('-').reverse().join('/');
   const isFixo = resultado?.tipo_cliente === 'fixo' && !!resultado?.pacote;
   const pendente =
     !!resultado &&
@@ -298,7 +299,14 @@ export default function FechamentoPage() {
             </section>
 
             <section className="card">
-              <h2 className="mb-4 text-base">Resumo — {mesNome} {ano}</h2>
+              <h2 className="mb-4 text-base">
+                Resumo — {mesNome} {ano}
+                {resultado.periodo_inicio && (
+                  <span className="ml-2 text-sm font-normal text-slate-500">
+                    ({fmtData(resultado.periodo_inicio)} a {fmtData(resultado.periodo_fim)})
+                  </span>
+                )}
+              </h2>
               <div className="space-y-2 text-sm">
                 {isFixo && (
                   <>

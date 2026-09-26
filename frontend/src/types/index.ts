@@ -137,6 +137,8 @@ export interface FechamentoOut {
   pacote: string;
   preco_pacote: number;
   antecipado: boolean;
+  periodo_inicio: string;
+  periodo_fim: string;
   quantidade_pacote: number;
   comandas: FechamentoComanda[];
   total_pecas: number;

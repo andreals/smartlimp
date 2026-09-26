@@ -76,6 +76,8 @@ type FechamentoOut struct {
 	Pacote           string              `json:"pacote"`
 	PrecoPacote      float64             `json:"preco_pacote"`
 	Antecipado       bool                `json:"antecipado"`
+	PeriodoInicio    string              `json:"periodo_inicio"`
+	PeriodoFim       string              `json:"periodo_fim"`
 	QuantidadePacote int64               `json:"quantidade_pacote"`
 	Comandas         []FechamentoComanda `json:"comandas"`
 	TotalPecas       int64               `json:"total_pecas"`
@@ -105,25 +107,23 @@ func (h *Handler) Fechamento(w http.ResponseWriter, r *http.Request) {
 		nomePacote       string
 		quantidadePacote int64
 		antecipado       string
+		diaVencimento    int64
 	)
 	err := h.db.QueryRow(`
 		SELECT cl.nome, cl.tipo::text,
 		       COALESCE(pk.preco, 0)::float8, COALESCE(pk.tipo::text, ''), COALESCE(pk.nome, ''),
-		       COALESCE(pk.quantidade, 0), cl.antecipado::text
+		       COALESCE(pk.quantidade, 0), cl.antecipado::text, COALESCE(cl.dia_vencimento, 0)
 		FROM clientes cl
 		LEFT JOIN pacotes pk ON cl.id_pacote = pk.id
 		WHERE cl.id = $1
-	`, idCliente).Scan(&clienteNome, &clienteTipo, &precoPacote, &tipoPacote, &nomePacote, &quantidadePacote, &antecipado)
+	`, idCliente).Scan(&clienteNome, &clienteTipo, &precoPacote, &tipoPacote, &nomePacote, &quantidadePacote, &antecipado, &diaVencimento)
 	if err != nil {
 		httpx.Error(w, r, http.StatusInternalServerError, "cliente "+idCliente+": "+err.Error())
 		return
 	}
 
-	dataInicio := fmt.Sprintf("%d-%02d-01", ano, mes)
-	lastDay := time.Date(ano, time.Month(mes+1), 0, 0, 0, 0, 0, time.Local).Day()
-	dataFim := fmt.Sprintf("%d-%02d-%02d", ano, mes, lastDay)
-
 	isFixo := clienteTipo == "fixo" && tipoPacote != ""
+	dataInicio, dataFim := periodoFechamento(ano, mes, clienteTipo, antecipado, diaVencimento)
 
 	var rows *sql.Rows
 	if isFixo {
@@ -165,6 +165,8 @@ func (h *Handler) Fechamento(w http.ResponseWriter, r *http.Request) {
 		PrecoPacote:      precoPacote,
 		QuantidadePacote: quantidadePacote,
 		Antecipado:       isFixo && antecipado == "S",
+		PeriodoInicio:    dataInicio,
+		PeriodoFim:       dataFim,
 		Comandas:         []FechamentoComanda{},
 	}
 
@@ -231,9 +233,18 @@ func (h *Handler) Fechar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dataInicio := fmt.Sprintf("%d-%02d-01", p.Ano, p.Mes)
-	lastDay := time.Date(p.Ano, time.Month(p.Mes+1), 0, 0, 0, 0, 0, time.Local).Day()
-	dataFim := fmt.Sprintf("%d-%02d-%02d", p.Ano, p.Mes, lastDay)
+	var (
+		clienteTipo, antecipado string
+		diaVencimento           int64
+	)
+	if err := h.db.QueryRow(`
+		SELECT tipo::text, antecipado::text, COALESCE(dia_vencimento, 0)
+		FROM clientes WHERE id = $1
+	`, p.IDCliente).Scan(&clienteTipo, &antecipado, &diaVencimento); err != nil {
+		httpx.Error(w, r, http.StatusBadRequest, "cliente inválido")
+		return
+	}
+	dataInicio, dataFim := periodoFechamento(p.Ano, p.Mes, clienteTipo, antecipado, diaVencimento)
 
 	tx, err := h.db.Begin()
 	if err != nil {
@@ -268,4 +279,25 @@ func (h *Handler) Fechar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// periodoFechamento: fixo, não antecipado, com dia de vencimento > 1 fecha do dia de vencimento
+// do mês anterior até o dia anterior ao vencimento do mês selecionado (mesma regra da impressão).
+// Demais casos usam o mês civil.
+func periodoFechamento(ano, mes int, tipo, antecipado string, diaVencimento int64) (inicio, fim string) {
+	if tipo == "fixo" && antecipado != "S" && diaVencimento > 1 && diaVencimento <= 31 {
+		venc := vencimentoNoMes(ano, time.Month(mes), int(diaVencimento))
+		prev := time.Date(ano, time.Month(mes), 1, 0, 0, 0, 0, time.Local).AddDate(0, -1, 0)
+		ini := vencimentoNoMes(prev.Year(), prev.Month(), int(diaVencimento))
+		return ini.Format("2006-01-02"), venc.AddDate(0, 0, -1).Format("2006-01-02")
+	}
+	first := time.Date(ano, time.Month(mes), 1, 0, 0, 0, 0, time.Local)
+	return first.Format("2006-01-02"), first.AddDate(0, 1, -1).Format("2006-01-02")
+}
+
+func vencimentoNoMes(ano int, mes time.Month, dia int) time.Time {
+	if dim := time.Date(ano, mes+1, 0, 0, 0, 0, 0, time.Local).Day(); dia > dim {
+		dia = dim
+	}
+	return time.Date(ano, mes, dia, 0, 0, 0, 0, time.Local)
 }
